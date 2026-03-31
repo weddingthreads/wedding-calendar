@@ -7,11 +7,11 @@
 <style>
   /* ===== EMR Design Tokens (CSS Variables) ===== */
   :root {
-    /* Brand */
-    --brand-25: #F3F9FF; --brand-50: #E9F3FF; --brand-100: #D1E6FF;
-    --brand-200: #A8CFFF; --brand-300: #80B9FF; --brand-400: #5CA6FF;
-    --brand-500: #3D94FF; --brand-600: #1D77FF; --brand-700: #1066E9;
-    --brand-800: #036AE3; --brand-900: #0B52BD;
+    /* Brand - Soft Blush Pink */
+    --brand-25: #FFF9FA; --brand-50: #FFF3F5; --brand-100: #FFE8ED;
+    --brand-200: #FFD5DE; --brand-300: #FFB3C4; --brand-400: #F98DA8;
+    --brand-500: #EE6B8A; --brand-600: #DC4B6E; --brand-700: #C03558;
+    --brand-800: #A12B4A; --brand-900: #872541;
 
     /* Gray */
     --gray-25: #FCFCFD; --gray-50: #F9FAFB; --gray-100: #F2F4F7;
@@ -35,9 +35,9 @@
     --text-placeholder: var(--gray-500);
     --text-brand-primary: var(--brand-900);
     --bg-primary: #FFFFFF;
-    --bg-secondary: var(--gray-50);
-    --bg-secondary-hover: var(--gray-100);
-    --bg-tertiary: var(--gray-100);
+    --bg-secondary: #FFFBFC;
+    --bg-secondary-hover: #FFF5F7;
+    --bg-tertiary: #FFF3F5;
     --bg-brand-primary: var(--brand-50);
     --bg-brand-solid: var(--brand-600);
     --border-primary: var(--gray-300);
@@ -75,7 +75,7 @@
   }
 
   .header {
-    background: var(--bg-brand-solid);
+    background: linear-gradient(135deg, #FFB3C4 0%, #F98DA8 50%, #EE6B8A 100%);
     padding: var(--spacing-4xl) var(--spacing-2xl) var(--spacing-3xl);
     text-align: center;
   }
@@ -1298,10 +1298,17 @@
     return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
   }
 
-  // 시간대 이슈 방지: YYYY-MM-DD를 로컬 날짜로 안전하게 파싱
+  // 시간대 이슈 방지: 날짜를 로컬 시간대로 안전하게 파싱
   function parseDate(dateStr) {
     if (!dateStr) return null;
     const str = String(dateStr);
+    // ISO datetime (2026-08-27T15:00:00.000Z) → 로컬 시간대로 변환
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return null;
+    }
+    // YYYY-MM-DD 순수 날짜 문자열
     const parts = str.split('-');
     if (parts.length === 3) {
       return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
