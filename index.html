@@ -1296,11 +1296,7 @@
         : dday <= 7 ? `<span class="upcoming-tag tag-soon">D-${dday}</span>`
         : dday <= 30 ? `<span class="upcoming-tag tag-this-month">D-${dday}</span>`
         : `<span class="upcoming-tag" style="background:var(--gray-100);color:var(--gray-500);">D-${dday}</span>`;
-      const attendees = getAttendees(e.id);
-      const attendCount = attendees.length;
-      const attendChips = attendees.length > 0
-        ? `<div class="attendees-list">${attendees.map(a => `<span class="attendee-chip">${esc(a)}</span>`).join('')}</div>`
-        : '';
+      const attendCount = getAttendees(e.id).length;
       return `<div class="entry-card" style="flex-wrap:wrap;">
         <div class="entry-date-badge">
           <span class="month">${d.getMonth() + 1}월</span>
@@ -1311,11 +1307,10 @@
           <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
           ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
           ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
-          ${attendChips}
         </div>
         <div class="entry-actions">
           <button class="btn-attend" onclick="openAttendModal('${e.id}')">
-            참여 <span class="attend-count">${attendCount}/10</span>
+            참여 <span class="attend-count">${attendCount}</span>
           </button>
           <button class="btn-icon" onclick="openEdit('${e.id}')" title="수정">&#9998;</button>
           <button class="btn-icon delete" onclick="deleteEntry('${e.id}')" title="삭제">&#10005;</button>
@@ -1423,7 +1418,7 @@
     const attendees = getAttendees(id);
     const listEl = document.getElementById('attendeesList');
     if (attendees.length > 0) {
-      listEl.innerHTML = `<div style="font-size:0.75rem;color:var(--text-quaternary);margin-bottom:6px;">참여자 (${attendees.length}명)</div>
+      listEl.innerHTML = `<div style="font-size:0.75rem;color:var(--text-quaternary);margin-bottom:6px;">참여자 (${attendees.length}/10)</div>
         <div class="attendees-list">${attendees.map(a =>
           `<span class="attendee-chip">${esc(a)} <span onclick="removeAttendee('${id}','${a.replace(/'/g, "\\'")}')" style="cursor:pointer;opacity:0.5;margin-left:2px;">x</span></span>`
         ).join('')}</div>`;
