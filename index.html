@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>우리들의 결혼기념일 캘린더</title>
+<title>스친이들의 결혼 캘린더</title>
 <style>
   /* ===== EMR Design Tokens (CSS Variables) ===== */
   :root {
@@ -832,7 +832,7 @@
   //  아래 URL을 Apps Script 배포 URL로 교체하세요.
   //  비어있으면 오프라인 모드(localStorage)로 동작합니다.
   // ============================================
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyJ-uWR1bniILh9ShXK3Mlzu9Xnjv8Z4XXFt6GsWHGNs_SYZiiX2fSS63EL94_uz48b/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMGOfPjO_LjgFXbDeor-k_GsQC3AKhc7LR8-0JVttxkJJQRp34uumnkTj6Ub_Kynbm/exec';
   // ============================================
 
   const isOnline = () => SCRIPT_URL.length > 0;
@@ -1033,7 +1033,7 @@
             : `<span class="upcoming-tag tag-this-month">D-${e.daysUntil}</span>`;
           const years = thisYear - d.getFullYear();
           const yearText = years > 0 ? ` (${years}주년)` : '';
-          const timeText = e.time ? ` ${e.time}` : '';
+          const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
           return `<div class="entry-card">
             <div class="entry-date-badge">
               <span class="month">${d.getMonth() + 1}월</span>
@@ -1129,7 +1129,7 @@
     document.getElementById('dayPopupList').innerHTML = evts.map(e => {
       const d = parseDate(e.date);
       const years = new Date().getFullYear() - d.getFullYear();
-      const timeText = e.time ? ` ${e.time}` : '';
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
       return `<div class="entry-card" style="margin-bottom:8px">
         <div class="entry-date-badge">
           <span class="month">${d.getMonth() + 1}월</span>
@@ -1185,7 +1185,7 @@
     listEl.innerHTML = filtered.map(e => {
       const d = parseDate(e.date);
       const years = thisYear - d.getFullYear();
-      const timeText = e.time ? ` ${e.time}` : '';
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
       return `<div class="entry-card">
         <div class="entry-date-badge">
           <span class="month">${d.getMonth() + 1}월</span>
@@ -1285,6 +1285,20 @@
       return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     }
     return new Date(str);
+  }
+
+  // Sheets가 시간을 1899-12-30T... Date로 변환하는 문제 방어
+  function parseTime(timeVal) {
+    if (!timeVal) return '';
+    const str = String(timeVal);
+    // 이미 HH:MM 형식이면 그대로
+    if (/^\d{1,2}:\d{2}$/.test(str)) return str;
+    // 1899-12-30T09:02:08.000Z 같은 형태 → 시간만 추출
+    if (str.includes('1899') || str.includes('T')) {
+      const match = str.match(/T(\d{2}):(\d{2})/);
+      if (match) return `${match[1]}:${match[2]}`;
+    }
+    return '';
   }
 
   function formatDate(dateStr) {
