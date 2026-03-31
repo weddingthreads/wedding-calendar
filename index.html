@@ -1,231 +1,1570 @@
-// ============================================
-// Google Apps Script - 결혼일 캘린더 API
-// ============================================
-// 사용법:
-// 1. Google Sheets에서 "확장 프로그램 > Apps Script" 클릭
-// 2. 이 코드를 전체 복사하여 붙여넣기
-// 3. "배포 > 배포 관리 > 연필 아이콘 > 새 버전 > 배포"
-// ============================================
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>스친이들의 결혼 캘린더</title>
+<style>
+  /* ===== EMR Design Tokens (CSS Variables) ===== */
+  :root {
+    /* Brand - Soft Blush Pink */
+    --brand-25: #FFF9FA; --brand-50: #FFF3F5; --brand-100: #FFE8ED;
+    --brand-200: #FFD5DE; --brand-300: #FFB3C4; --brand-400: #F98DA8;
+    --brand-500: #EE6B8A; --brand-600: #DC4B6E; --brand-700: #C03558;
+    --brand-800: #A12B4A; --brand-900: #872541;
 
-const SHEET_NAME = 'entries';
+    /* Gray */
+    --gray-25: #FCFCFD; --gray-50: #F9FAFB; --gray-100: #F2F4F7;
+    --gray-200: #EAECF0; --gray-300: #D0D5DD; --gray-400: #98A2B3;
+    --gray-500: #667085; --gray-600: #475467; --gray-700: #344054;
+    --gray-800: #1D2939; --gray-900: #101828; --gray-950: #0C111D;
 
-function doGet(e) {
-  return handleRequest(e);
-}
+    /* Status */
+    --error-50: #FEF3F2; --error-100: #FEE4E2; --error-300: #FDA29B;
+    --error-400: #F97066; --error-500: #F04438; --error-600: #D92D20; --error-700: #B42318;
+    --warning-50: #FFFAEB; --warning-100: #FEF0C7; --warning-300: #FEC84B;
+    --warning-500: #F79009; --warning-600: #DC6803; --warning-700: #B54708;
+    --success-50: #ECFDF3; --success-100: #D1FADF; --success-300: #6CE9A6;
+    --success-500: #12B76A; --success-600: #039855; --success-700: #027A48;
 
-function doPost(e) {
-  return handleRequest(e);
-}
+    /* Semantic */
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-700);
+    --text-tertiary: var(--gray-600);
+    --text-quaternary: var(--gray-500);
+    --text-placeholder: var(--gray-500);
+    --text-brand-primary: var(--brand-900);
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #FFFBFC;
+    --bg-secondary-hover: #FFF5F7;
+    --bg-tertiary: #FFF3F5;
+    --bg-brand-primary: var(--brand-50);
+    --bg-brand-solid: var(--brand-600);
+    --border-primary: var(--gray-300);
+    --border-secondary: var(--gray-200);
+    --border-tertiary: var(--gray-100);
 
-function handleRequest(e) {
-  const params = e.parameter;
-  const action = params.action;
+    /* Shadow */
+    --shadow-xs: 0px 1px 2px 0px rgba(16,24,40,0.05);
+    --shadow-sm: 0px 1px 2px 0px rgba(16,24,40,0.06), 0px 1px 3px 0px rgba(16,24,40,0.10);
+    --shadow-md: 0px 2px 4px -2px rgba(16,24,40,0.06), 0px 4px 8px -2px rgba(16,24,40,0.10);
+    --shadow-lg: 0px 4px 6px -2px rgba(16,24,40,0.03), 0px 12px 16px -4px rgba(16,24,40,0.08);
 
-  let result;
-  try {
-    switch (action) {
-      case 'read':
-        result = readEntries();
-        break;
-      case 'add':
-        result = addEntry(params);
-        break;
-      case 'update':
-        result = updateEntry(params);
-        break;
-      case 'delete':
-        result = deleteEntry(params);
-        break;
-      case 'attend':
-        result = attendEntry(params);
-        break;
-      case 'unattend':
-        result = unattendEntry(params);
-        break;
-      default:
-        result = { success: false, error: 'Unknown action' };
-    }
-  } catch (err) {
-    result = { success: false, error: err.message };
+    /* Radius */
+    --rounded-md: 0.5rem;
+    --rounded-lg: 0.625rem;
+    --rounded-xl: 0.75rem;
+    --rounded-2xl: 1rem;
+    --rounded-full: 9999px;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem; --spacing-sm: 0.375rem; --spacing-md: 0.5rem;
+    --spacing-lg: 0.75rem; --spacing-xl: 1rem; --spacing-2xl: 1.25rem;
+    --spacing-3xl: 1.5rem; --spacing-4xl: 2rem;
   }
 
-  return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-function getSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(['id', 'name', 'date', 'time', 'spouse', 'contact', 'memo', 'attendees', 'createdAt']);
-    sheet.getRange(1, 1, 1, 9).setFontWeight('bold');
+  body {
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  // 기존 시트에 attendees 컬럼이 없으면 추가
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  if (headers.indexOf('attendees') === -1) {
-    const nextCol = sheet.getLastColumn() + 1;
-    sheet.getRange(1, nextCol).setValue('attendees').setFontWeight('bold');
+
+  .header {
+    background: linear-gradient(135deg, #FFB3C4 0%, #F98DA8 50%, #EE6B8A 100%);
+    padding: var(--spacing-4xl) var(--spacing-2xl) var(--spacing-3xl);
+    text-align: center;
   }
-  return sheet;
-}
 
-function getAttendeesCol(sheet) {
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  return headers.indexOf('attendees') + 1; // 1-based
-}
-
-function readEntries() {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return { success: true, entries: [] };
-
-  const headers = data[0];
-  const entries = [];
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (!row[0]) continue;
-    const entry = {};
-    headers.forEach((h, idx) => {
-      entry[h] = row[idx];
-    });
-    if (entry.date instanceof Date) {
-      entry.date = Utilities.formatDate(entry.date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    }
-    if (entry.createdAt instanceof Date) {
-      entry.createdAt = entry.createdAt.toISOString();
-    }
-    if (entry.time instanceof Date) {
-      entry.time = Utilities.formatDate(entry.time, Session.getScriptTimeZone(), 'HH:mm');
-    } else if (typeof entry.time === 'string' && entry.time.includes('1899')) {
-      entry.time = '';
-    }
-    // attendees는 문자열 그대로 유지 (쉼표 구분)
-    if (!entry.attendees) entry.attendees = '';
-    entries.push(entry);
+  .header h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: var(--spacing-xs);
+    letter-spacing: -0.5px;
   }
-  return { success: true, entries };
-}
 
-function addEntry(params) {
-  const sheet = getSheet();
-  const id = new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 6);
-  const now = new Date().toISOString();
-  const attCol = getAttendeesCol(sheet);
-
-  // 기본 행 추가
-  const row = [
-    id,
-    params.name || '',
-    params.date || '',
-    params.time || '',
-    params.spouse || '',
-    params.contact || '',
-    params.memo || ''
-  ];
-  // attendees 컬럼 위치에 맞춰 빈값 채우기
-  while (row.length < attCol - 1) row.push('');
-  row.push(''); // attendees
-  while (row.length < attCol) row.push('');
-  // createdAt
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const createdAtCol = headers.indexOf('createdAt');
-  while (row.length <= createdAtCol) row.push('');
-  row[createdAtCol] = now;
-
-  sheet.appendRow(row);
-
-  return {
-    success: true,
-    entry: {
-      id, name: params.name, date: params.date, time: params.time || '',
-      spouse: params.spouse, contact: params.contact,
-      memo: params.memo, attendees: '', createdAt: now
-    }
-  };
-}
-
-function updateEntry(params) {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0];
-  const id = params.id;
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
-      const colMap = {};
-      headers.forEach((h, idx) => { colMap[h] = idx + 1; });
-      if (params.name && colMap.name) sheet.getRange(i + 1, colMap.name).setValue(params.name);
-      if (params.date && colMap.date) sheet.getRange(i + 1, colMap.date).setValue(params.date);
-      if (params.time !== undefined && colMap.time) sheet.getRange(i + 1, colMap.time).setValue(params.time);
-      if (params.spouse !== undefined && colMap.spouse) sheet.getRange(i + 1, colMap.spouse).setValue(params.spouse);
-      if (params.contact !== undefined && colMap.contact) sheet.getRange(i + 1, colMap.contact).setValue(params.contact);
-      if (params.memo !== undefined && colMap.memo) sheet.getRange(i + 1, colMap.memo).setValue(params.memo);
-      return { success: true };
-    }
+  .header p {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--brand-200);
   }
-  return { success: false, error: 'Entry not found' };
-}
 
-function deleteEntry(params) {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  const id = params.id;
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
-      sheet.deleteRow(i + 1);
-      return { success: true };
-    }
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-3xl);
+    margin-top: var(--spacing-xl);
   }
-  return { success: false, error: 'Entry not found' };
-}
 
-// 참여자 추가
-function attendEntry(params) {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  const id = params.id;
-  const nickname = params.nickname;
-  if (!nickname) return { success: false, error: 'Nickname required' };
+  .stat-item { text-align: center; }
 
-  const attCol = getAttendeesCol(sheet);
-  if (attCol === 0) return { success: false, error: 'No attendees column' };
+  .stat-num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
-      const current = String(data[i][attCol - 1] || '');
-      const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
-      if (list.includes(nickname)) {
-        return { success: false, error: 'Already attending' };
+  .stat-label {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: var(--brand-200);
+    margin-top: 2px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(249,250,251,0.85);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  .loading-overlay.show { display: flex; }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--brand-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { font-size: 0.875rem; color: var(--text-tertiary); }
+
+  /* Sync indicator */
+  .sync-bar {
+    text-align: center;
+    padding: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--text-quaternary);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sync-bar:hover { background: var(--bg-secondary-hover); }
+  .sync-bar.error { background: var(--error-50); color: var(--error-600); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    background: var(--bg-tertiary);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xs);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .tab {
+    flex: 1;
+    padding: var(--spacing-lg);
+    text-align: center;
+    border-radius: var(--rounded-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-quaternary);
+    border: none;
+    background: transparent;
+  }
+
+  .tab.active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Form */
+  .form-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .form-card h2 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .form-group input, .form-group textarea {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .form-group input::placeholder, .form-group textarea::placeholder {
+    color: var(--text-placeholder);
+  }
+
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .form-group textarea { resize: none; height: 60px; }
+
+  .btn-submit {
+    grid-column: 1 / -1;
+    padding: var(--spacing-lg);
+    background: var(--brand-600);
+    color: #FFFFFF;
+    border: 1px solid var(--brand-600);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: var(--spacing-xs);
+  }
+
+  .btn-submit:hover { background: var(--brand-700); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Calendar */
+  .calendar-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .cal-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .cal-nav button {
+    width: 36px; height: 36px;
+    border-radius: var(--rounded-full);
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: background 0.2s;
+  }
+
+  .cal-nav button:hover { background: var(--bg-secondary-hover); }
+
+  .cal-nav .cal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-quaternary);
+    padding: var(--spacing-xs);
+  }
+
+  .cal-weekdays span:first-child { color: var(--error-400); }
+  .cal-weekdays span:last-child { color: var(--brand-500); }
+
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    position: relative;
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .cal-day.empty { opacity: 0; }
+  .cal-day.today { background: var(--bg-tertiary); font-weight: 700; }
+
+  .cal-day.has-event {
+    background: var(--brand-50);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--brand-700);
+  }
+
+  .cal-day.has-event:hover {
+    background: var(--brand-100);
+  }
+
+  .cal-day .dot-row { display: flex; gap: 2px; margin-top: 2px; }
+  .cal-day .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand-500); }
+  .cal-day .dot-more { font-size: 8px; color: var(--brand-500); font-weight: 700; }
+  .cal-day.sunday { color: var(--error-400); }
+  .cal-day.saturday { color: var(--brand-500); }
+  .cal-day.has-event.sunday, .cal-day.has-event.saturday { color: var(--brand-700); }
+
+  /* Popup */
+  .day-popup {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+
+  .day-popup.show { display: flex; }
+
+  .day-popup-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 380px;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .day-popup-close {
+    position: absolute;
+    top: var(--spacing-lg); right: var(--spacing-lg);
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--gray-400);
+  }
+
+  .day-popup h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  /* List */
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+
+  .search-bar {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .search-bar input:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .search-bar select {
+    padding: var(--spacing-lg) var(--spacing-lg);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .entry-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xl);
+    transition: box-shadow 0.15s;
+  }
+
+  .entry-card:hover { box-shadow: var(--shadow-sm); }
+
+  .entry-date-badge {
+    width: 48px; height: 52px;
+    border-radius: var(--rounded-lg);
+    background: var(--brand-600);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .entry-date-badge .month { font-size: 0.625rem; font-weight: 700; color: var(--brand-100); }
+  .entry-date-badge .day { font-size: 1.25rem; font-weight: 800; color: #FFFFFF; line-height: 1; }
+
+  .entry-info { flex: 1; min-width: 0; }
+
+  .entry-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+
+  .entry-detail { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px; }
+
+  .entry-memo { font-size: 0.75rem; color: var(--text-quaternary); margin-top: var(--spacing-xs); }
+
+  .entry-actions { display: flex; gap: var(--spacing-sm); }
+
+  .btn-icon {
+    width: 32px; height: 32px;
+    border-radius: var(--rounded-md);
+    border: 1px solid var(--border-secondary);
+    background: var(--bg-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover { background: var(--bg-secondary-hover); }
+  .btn-icon.delete:hover { background: var(--error-50); color: var(--error-600); }
+
+  .btn-attend {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 4px 10px;
+    border-radius: var(--rounded-full);
+    border: 1px solid var(--brand-200);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-attend:hover { background: var(--brand-100); }
+  .btn-attend .attend-count {
+    background: var(--brand-600);
+    color: #fff;
+    border-radius: var(--rounded-full);
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    font-weight: 700;
+  }
+
+  .attendees-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--spacing-xs);
+  }
+  .attendee-chip {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--rounded-full);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  /* Attend modal */
+  .attend-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 160;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+  .attend-modal.show { display: flex; }
+  .attend-modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 340px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .attend-modal-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+  .attend-modal-content input {
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+  }
+  .attend-modal-content input:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+  .attend-modal-btns {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+  .attend-modal-btns button {
+    flex: 1;
+    padding: var(--spacing-lg);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .upcoming-header {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .upcoming-tag {
+    display: inline-block;
+    padding: 2px var(--spacing-md);
+    border-radius: var(--rounded-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: var(--spacing-sm);
+  }
+
+  .tag-today { background: var(--error-50); color: var(--error-700); }
+  .tag-soon { background: var(--warning-50); color: var(--warning-700); }
+  .tag-this-month { background: var(--success-50); color: var(--success-700); }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--spacing-4xl) var(--spacing-2xl);
+    color: var(--text-quaternary);
+  }
+
+  .empty-state .emoji { font-size: 48px; margin-bottom: var(--spacing-lg); }
+  .empty-state p { font-size: 0.875rem; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--gray-900);
+    color: #FFFFFF;
+    padding: var(--spacing-lg) var(--spacing-3xl);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 200;
+    transition: transform 0.3s;
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .month-btn {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--rounded-md);
+    background: var(--bg-primary);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .month-btn:hover { background: var(--bg-secondary-hover); }
+  .month-btn.active { background: var(--brand-600); color: #FFFFFF; border-color: var(--brand-600); }
+  .month-btn .count { font-size: 0.625rem; color: var(--text-quaternary); display: block; }
+  .month-btn.active .count { color: var(--brand-200); }
+
+  /* Edit modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 150;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-content h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .modal-content .form-group { margin-bottom: var(--spacing-lg); }
+
+  .modal-btns {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-2xl);
+  }
+
+  .modal-btns button {
+    flex: 1;
+    padding: var(--spacing-lg);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-cancel {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+  }
+  .btn-cancel:hover { background: var(--bg-secondary-hover); }
+
+  .btn-save {
+    background: var(--brand-600);
+    color: #FFFFFF;
+  }
+  .btn-save:hover { background: var(--brand-700); }
+
+  /* Setup banner */
+  .setup-banner {
+    background: var(--warning-50);
+    border: 1px solid var(--warning-300);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-2xl);
+    font-size: 0.8125rem;
+    color: var(--warning-700);
+    line-height: 1.6;
+  }
+  .setup-banner code {
+    background: var(--warning-100);
+    padding: 2px var(--spacing-sm);
+    border-radius: var(--spacing-xs);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 500px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.375rem; }
+    .cal-day { font-size: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">데이터를 불러오는 중...</div>
+</div>
+
+<div class="header">
+  <h1>스친이들의 Wedding Day</h1>
+  <p>소중한 날을 함께 기억해요</p>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num" id="totalCount">0</div>
+      <div class="stat-label">등록된 커플</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="thisMonthCount">0</div>
+      <div class="stat-label">이번 달 결혼</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="upcomingCount">0</div>
+      <div class="stat-label">7일 이내</div>
+    </div>
+  </div>
+</div>
+
+<div class="sync-bar" id="syncBar" onclick="loadFromSheet()">
+  마지막 동기화: -
+</div>
+
+<div class="container">
+
+  <!-- Setup Banner (Apps Script URL 미설정 시 표시) -->
+  <div class="setup-banner" id="setupBanner" style="display:none;">
+    <strong>Google Sheets 연동 설정이 필요합니다.</strong><br>
+    아래 코드의 <code>SCRIPT_URL</code>에 Apps Script 웹앱 URL을 입력해주세요.<br>
+    현재는 <strong>오프라인 모드</strong>(localStorage)로 작동 중입니다.
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="register">등록하기</button>
+    <button class="tab" data-tab="list">전체목록</button>
+    <button class="tab" data-tab="calendar">캘린더</button>
+  </div>
+
+  <!-- Register Tab -->
+  <div class="section-panel active" id="panel-register">
+    <div class="form-card">
+      <h2>결혼일 등록</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>이름</label>
+          <input type="text" id="inputName" placeholder="예: 홍길동">
+        </div>
+        <div class="form-group">
+          <label>결혼일</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="form-group">
+          <label>결혼식 시간 (선택)</label>
+          <input type="time" id="inputTime" step="3600">
+        </div>
+        <div class="form-group">
+          <label>배우자 이름 (선택)</label>
+          <input type="text" id="inputSpouse" placeholder="예: 김영희">
+        </div>
+        <div class="form-group">
+          <label>연락처 (선택)</label>
+          <input type="text" id="inputContact" placeholder="예: 010-1234-5678">
+        </div>
+        <div class="form-group full">
+          <label>장소 (선택)</label>
+          <input type="text" id="inputMemo" placeholder="예: 더채플앳청담">
+        </div>
+        <button class="btn-submit" id="btnSubmit" onclick="addEntry()">등록하기</button>
+      </div>
+    </div>
+    <div id="upcomingSection"></div>
+  </div>
+
+  <!-- Calendar Tab -->
+  <div class="section-panel" id="panel-calendar">
+    <div class="calendar-card">
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+
+  <!-- List Tab -->
+  <div class="section-panel" id="panel-list">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="이름으로 검색..." oninput="renderList()">
+      <select id="sortSelect" onchange="renderList()">
+        <option value="date">날짜순</option>
+        <option value="name">이름순</option>
+        <option value="upcoming">다가오는순</option>
+      </select>
+    </div>
+    <div class="entry-list" id="entryList"></div>
+  </div>
+</div>
+
+<!-- Day Popup -->
+<div class="day-popup" id="dayPopup" onclick="if(event.target===this)closeDayPopup()">
+  <div class="day-popup-content">
+    <button class="day-popup-close" onclick="closeDayPopup()">&times;</button>
+    <h3 id="dayPopupTitle"></h3>
+    <div id="dayPopupList"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-content">
+    <h3>수정하기</h3>
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" id="editName">
+    </div>
+    <div class="form-group">
+      <label>결혼일</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="form-group">
+      <label>결혼식 시간</label>
+      <input type="time" id="editTime" step="3600">
+    </div>
+    <div class="form-group">
+      <label>배우자 이름</label>
+      <input type="text" id="editSpouse">
+    </div>
+    <div class="form-group">
+      <label>연락처</label>
+      <input type="text" id="editContact">
+    </div>
+    <div class="form-group">
+      <label>장소</label>
+      <input type="text" id="editMemo">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+      <button class="btn-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attend Modal -->
+<div class="attend-modal" id="attendModal" onclick="if(event.target===this)closeAttendModal()">
+  <div class="attend-modal-content">
+    <h3 id="attendModalTitle">참여하기</h3>
+    <input type="text" id="attendNickname" placeholder="닉네임을 입력하세요" maxlength="20">
+    <div class="attend-modal-btns">
+      <button class="btn-cancel" onclick="closeAttendModal()">취소</button>
+      <button class="btn-save" onclick="submitAttend()">참여</button>
+    </div>
+    <div id="attendeesList" style="margin-top:var(--spacing-xl);text-align:left;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================
+  //  Google Sheets 연동 설정
+  // ============================================
+  //  아래 URL을 Apps Script 배포 URL로 교체하세요.
+  //  비어있으면 오프라인 모드(localStorage)로 동작합니다.
+  // ============================================
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMGOfPjO_LjgFXbDeor-k_GsQC3AKhc7LR8-0JVttxkJJQRp34uumnkTj6Ub_Kynbm/exec';
+  // ============================================
+
+  const isOnline = () => SCRIPT_URL.length > 0;
+  const STORAGE_KEY = 'wedding_calendar_entries';
+
+  let entries = [];
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+  let editingId = null;
+
+  // ===== API Helper =====
+  async function apiCall(params) {
+    const url = new URL(SCRIPT_URL);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error('Network error');
+    return res.json();
+  }
+
+  // ===== Load / Save =====
+  function loadLocal() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveLocal(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  async function loadFromSheet() {
+    if (!isOnline()) {
+      entries = loadLocal();
+      updateSyncBar('오프라인 모드 (localStorage)');
+      refreshAll();
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const result = await apiCall({ action: 'read' });
+      if (result.success) {
+        entries = result.entries;
+        saveLocal(entries); // cache locally
+        updateSyncBar(`동기화 완료 (${new Date().toLocaleTimeString('ko')})`);
+      } else {
+        throw new Error(result.error);
       }
-      list.push(nickname);
-      sheet.getRange(i + 1, attCol).setValue(list.join(','));
-      return { success: true, attendees: list.join(',') };
+    } catch (err) {
+      console.error('Load error:', err);
+      entries = loadLocal();
+      updateSyncBar('동기화 실패 - 캐시 데이터 사용 중', true);
+    }
+    showLoading(false);
+    refreshAll();
+  }
+
+  function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('show', show);
+  }
+
+  function updateSyncBar(text, isError) {
+    const bar = document.getElementById('syncBar');
+    bar.textContent = text + ' (클릭하여 새로고침)';
+    bar.classList.toggle('error', !!isError);
+  }
+
+  function refreshAll() {
+    updateStats();
+    renderUpcoming();
+    renderCalendar();
+    if (document.getElementById('panel-list').classList.contains('active')) {
+      renderList();
     }
   }
-  return { success: false, error: 'Entry not found' };
-}
 
-// 참여자 제거
-function unattendEntry(params) {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  const id = params.id;
-  const nickname = params.nickname;
+  // ===== Toast =====
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
 
-  const attCol = getAttendeesCol(sheet);
-  if (attCol === 0) return { success: false, error: 'No attendees column' };
+  // ===== Tabs =====
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'calendar') renderCalendar();
+      if (tab.dataset.tab === 'list') renderList();
+    });
+  });
 
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === id) {
-      const current = String(data[i][attCol - 1] || '');
-      const list = current ? current.split(',').map(s => s.trim()).filter(Boolean) : [];
-      const filtered = list.filter(a => a !== nickname);
-      sheet.getRange(i + 1, attCol).setValue(filtered.join(','));
-      return { success: true, attendees: filtered.join(',') };
+  // ===== Add Entry =====
+  async function addEntry() {
+    const name = document.getElementById('inputName').value.trim();
+    const date = document.getElementById('inputDate').value;
+    const time = document.getElementById('inputTime').value;
+    const spouse = document.getElementById('inputSpouse').value.trim();
+    const contact = document.getElementById('inputContact').value.trim();
+    const memo = document.getElementById('inputMemo').value.trim();
+
+    if (!name) { showToast('이름을 입력해주세요'); return; }
+    if (!date) { showToast('결혼일을 선택해주세요'); return; }
+
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'add', name, date, time, spouse, contact, memo });
+        if (result.success) {
+          entries.push(result.entry);
+          saveLocal(entries);
+        } else {
+          throw new Error(result.error);
+        }
+      } else {
+        const entry = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name, date, time, spouse, contact, memo,
+          createdAt: new Date().toISOString()
+        };
+        entries.push(entry);
+        saveLocal(entries);
+      }
+
+      // Clear form
+      document.getElementById('inputName').value = '';
+      document.getElementById('inputDate').value = '';
+      document.getElementById('inputTime').value = '';
+      document.getElementById('inputSpouse').value = '';
+      document.getElementById('inputContact').value = '';
+      document.getElementById('inputMemo').value = '';
+
+      showToast(`${name}님의 결혼일이 등록되었습니다!`);
+      refreshAll();
+    } catch (err) {
+      showToast('등록 실패: ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+  }
+
+  // ===== Stats =====
+  function updateStats() {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    document.getElementById('totalCount').textContent = entries.length;
+
+    const thisMonthEntries = entries.filter(e => {
+      const d = parseDate(e.date);
+      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
+    });
+    document.getElementById('thisMonthCount').textContent = thisMonthEntries.length;
+
+    const upcoming = entries.filter(e => {
+      const diff = getDaysUntil(e.date);
+      return diff >= 0 && diff <= 7;
+    });
+    document.getElementById('upcomingCount').textContent = upcoming.length;
+  }
+
+  // ===== Upcoming =====
+  function renderUpcoming() {
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const section = document.getElementById('upcomingSection');
+
+    const withDiff = entries.map(e => {
+      return { ...e, daysUntil: getDaysUntil(e.date) };
+    }).filter(e => e.daysUntil >= 0 && e.daysUntil <= 30)
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+
+    if (withDiff.length === 0) { section.innerHTML = ''; return; }
+
+    section.innerHTML = `
+      <div class="upcoming-header">다가오는 결혼식</div>
+      <div class="entry-list">
+        ${withDiff.map(e => {
+          const d = parseDate(e.date);
+          const tag = e.daysUntil === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
+            : e.daysUntil <= 7 ? `<span class="upcoming-tag tag-soon">D-${e.daysUntil}</span>`
+            : `<span class="upcoming-tag tag-this-month">D-${e.daysUntil}</span>`;
+          const years = thisYear - d.getFullYear();
+          const yearText = years > 0 ? ` (${years}주년)` : '';
+          const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+          return `<div class="entry-card">
+            <div class="entry-date-badge">
+              <span class="month">${d.getMonth() + 1}월</span>
+              <span class="day">${d.getDate()}</span>
+            </div>
+            <div class="entry-info">
+              <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${tag}</div>
+              <div class="entry-detail">${formatDate(e.date)}${timeText}${yearText}</div>
+              ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ===== Calendar =====
+  function renderCalendar() {
+    document.getElementById('calTitle').textContent = `${currentYear}년 ${currentMonth + 1}월`;
+
+    const daysEl = document.getElementById('calDays');
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = new Date();
+
+    const eventMap = {};
+    entries.forEach(e => {
+      const d = parseDate(e.date);
+      if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+        const key = d.getDate();
+        if (!eventMap[key]) eventMap[key] = [];
+        eventMap[key].push(e);
+      }
+    });
+
+    let html = '';
+    for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+    for (let day = 1; day <= lastDate; day++) {
+      const dow = (firstDay + day - 1) % 7;
+      const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+      const evts = eventMap[day] || [];
+      const classes = ['cal-day'];
+      if (isToday) classes.push('today');
+      if (evts.length > 0) classes.push('has-event');
+      if (dow === 0) classes.push('sunday');
+      if (dow === 6) classes.push('saturday');
+
+      const onclick = evts.length > 0 ? `onclick="showDayPopup(${currentYear},${currentMonth},${day})"` : '';
+      let dots = '';
+      if (evts.length > 0 && evts.length <= 3) {
+        dots = `<div class="dot-row">${evts.map(() => '<div class="dot"></div>').join('')}</div>`;
+      } else if (evts.length > 3) {
+        dots = `<div class="dot-row"><div class="dot"></div><div class="dot"></div><span class="dot-more">+${evts.length - 2}</span></div>`;
+      }
+
+      html += `<div class="${classes.join(' ')}" ${onclick}>${day}${dots}</div>`;
+    }
+
+    daysEl.innerHTML = html;
+    renderMonthGrid();
+  }
+
+  function renderMonthGrid() {
+    const grid = document.getElementById('monthGrid');
+    const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const counts = new Array(12).fill(0);
+    entries.forEach(e => {
+      const d = parseDate(e.date);
+      if (d.getFullYear() === currentYear) counts[d.getMonth()]++;
+    });
+
+    grid.innerHTML = months.map((m, i) =>
+      `<button class="month-btn ${i === currentMonth ? 'active' : ''}" onclick="goMonth(${i})">
+        ${m}${counts[i] > 0 ? `<span class="count">${counts[i]}명</span>` : ''}
+      </button>`
+    ).join('');
+  }
+
+  function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+
+  function goMonth(m) { currentMonth = m; renderCalendar(); }
+
+  // ===== Day Popup =====
+  function showDayPopup(year, month, day) {
+    const evts = entries.filter(e => {
+      const d = parseDate(e.date);
+      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+    });
+
+    document.getElementById('dayPopupTitle').textContent = `${year}년 ${month + 1}월 ${day}일 결혼식`;
+    document.getElementById('dayPopupList').innerHTML = evts.map(e => {
+      const d = parseDate(e.date);
+      const years = new Date().getFullYear() - d.getFullYear();
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+      return `<div class="entry-card" style="margin-bottom:8px">
+        <div class="entry-date-badge">
+          <span class="month">${d.getMonth() + 1}월</span>
+          <span class="day">${d.getDate()}</span>
+        </div>
+        <div class="entry-info">
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''}</div>
+          <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('dayPopup').classList.add('show');
+  }
+
+  function closeDayPopup() { document.getElementById('dayPopup').classList.remove('show'); }
+
+  // ===== List =====
+  function renderList() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    const now = new Date();
+    const thisYear = now.getFullYear();
+
+    let filtered = entries.filter(e =>
+      e.name.toLowerCase().includes(query) ||
+      (e.spouse && e.spouse.toLowerCase().includes(query))
+    );
+
+    if (sort === 'date') {
+      filtered.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+    } else if (sort === 'name') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    } else {
+      filtered.sort((a, b) => {
+        const da = parseDate(a.date), db = parseDate(b.date);
+        let na = new Date(thisYear, da.getMonth(), da.getDate());
+        let nb = new Date(thisYear, db.getMonth(), db.getDate());
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (na < today) na.setFullYear(thisYear + 1);
+        if (nb < today) nb.setFullYear(thisYear + 1);
+        return na - nb;
+      });
+    }
+
+    const listEl = document.getElementById('entryList');
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">💍</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 결혼일이 없습니다'}</p></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(e => {
+      const d = parseDate(e.date);
+      const years = thisYear - d.getFullYear();
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+      const dday = getDaysUntil(e.date);
+      const ddayTag = dday === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
+        : dday <= 7 ? `<span class="upcoming-tag tag-soon">D-${dday}</span>`
+        : dday <= 30 ? `<span class="upcoming-tag tag-this-month">D-${dday}</span>`
+        : `<span class="upcoming-tag" style="background:var(--gray-100);color:var(--gray-500);">D-${dday}</span>`;
+      const attendees = getAttendees(e.id);
+      const attendCount = attendees.length;
+      const attendChips = attendees.length > 0
+        ? `<div class="attendees-list">${attendees.map(a => `<span class="attendee-chip">${esc(a)}</span>`).join('')}</div>`
+        : '';
+      return `<div class="entry-card" style="flex-wrap:wrap;">
+        <div class="entry-date-badge">
+          <span class="month">${d.getMonth() + 1}월</span>
+          <span class="day">${d.getDate()}</span>
+        </div>
+        <div class="entry-info">
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${ddayTag}</div>
+          <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
+          ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+          ${attendChips}
+        </div>
+        <div class="entry-actions">
+          <button class="btn-attend" onclick="openAttendModal('${e.id}')">
+            참여 <span class="attend-count">${attendCount}</span>
+          </button>
+          <button class="btn-icon" onclick="openEdit('${e.id}')" title="수정">&#9998;</button>
+          <button class="btn-icon delete" onclick="deleteEntry('${e.id}')" title="삭제">&#10005;</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ===== Edit =====
+  function openEdit(id) {
+    const e = entries.find(x => x.id === id);
+    if (!e) return;
+    editingId = id;
+    document.getElementById('editName').value = e.name || '';
+    // date input은 YYYY-MM-DD 형식 필요
+    const d = parseDate(e.date);
+    if (d && !isNaN(d)) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      document.getElementById('editDate').value = `${y}-${m}-${day}`;
+    } else {
+      document.getElementById('editDate').value = '';
+    }
+    // time input은 HH:MM 형식 필요
+    document.getElementById('editTime').value = parseTime(e.time) || '';
+    document.getElementById('editSpouse').value = e.spouse || '';
+    document.getElementById('editContact').value = e.contact || '';
+    document.getElementById('editMemo').value = e.memo || '';
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editingId = null;
+  }
+
+  async function saveEdit() {
+    const idx = entries.findIndex(x => x.id === editingId);
+    if (idx === -1) return;
+
+    const name = document.getElementById('editName').value.trim();
+    const date = document.getElementById('editDate').value;
+    const time = document.getElementById('editTime').value;
+    if (!name || !date) { showToast('이름과 날짜는 필수입니다'); return; }
+
+    const spouse = document.getElementById('editSpouse').value.trim();
+    const contact = document.getElementById('editContact').value.trim();
+    const memo = document.getElementById('editMemo').value.trim();
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'update', id: editingId, name, date, time, spouse, contact, memo });
+        if (!result.success) throw new Error(result.error);
+      }
+
+      entries[idx] = { ...entries[idx], name, date, time, spouse, contact, memo };
+      saveLocal(entries);
+      closeEditModal();
+      renderList();
+      updateStats();
+      showToast('수정되었습니다');
+    } catch (err) {
+      showToast('수정 실패: ' + err.message);
     }
   }
-  return { success: false, error: 'Entry not found' };
-}
+
+  // ===== Delete =====
+  async function deleteEntry(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'delete', id });
+        if (!result.success) throw new Error(result.error);
+      }
+
+      entries = entries.filter(x => x.id !== id);
+      saveLocal(entries);
+      renderList();
+      updateStats();
+      renderUpcoming();
+      showToast('삭제되었습니다');
+    } catch (err) {
+      showToast('삭제 실패: ' + err.message);
+    }
+  }
+
+  // ===== Attend (Google Sheets 연동) =====
+  let attendingId = null;
+
+  function getAttendees(entryId) {
+    const e = entries.find(x => x.id === entryId);
+    if (!e || !e.attendees) return [];
+    return String(e.attendees).split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  function openAttendModal(id) {
+    attendingId = id;
+    const e = entries.find(x => x.id === id);
+    const name = e ? (e.spouse ? `${e.name} & ${e.spouse}` : e.name) : '';
+    document.getElementById('attendModalTitle').textContent = `${name} 결혼식 참여`;
+    document.getElementById('attendNickname').value = '';
+
+    const attendees = getAttendees(id);
+    const listEl = document.getElementById('attendeesList');
+    if (attendees.length > 0) {
+      listEl.innerHTML = `<div style="font-size:0.75rem;color:var(--text-quaternary);margin-bottom:6px;">참여자 (${attendees.length}명)</div>
+        <div class="attendees-list">${attendees.map(a =>
+          `<span class="attendee-chip">${esc(a)} <span onclick="removeAttendee('${id}','${a.replace(/'/g, "\\'")}')" style="cursor:pointer;opacity:0.5;margin-left:2px;">x</span></span>`
+        ).join('')}</div>`;
+    } else {
+      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--text-quaternary);">아직 참여자가 없습니다</div>';
+    }
+
+    document.getElementById('attendModal').classList.add('show');
+    setTimeout(() => document.getElementById('attendNickname').focus(), 100);
+  }
+
+  function closeAttendModal() {
+    document.getElementById('attendModal').classList.remove('show');
+    attendingId = null;
+  }
+
+  async function submitAttend() {
+    const nickname = document.getElementById('attendNickname').value.trim();
+    if (!nickname) { showToast('닉네임을 입력해주세요'); return; }
+
+    const current = getAttendees(attendingId);
+    if (current.includes(nickname)) {
+      showToast('이미 참여한 닉네임입니다');
+      return;
+    }
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'attend', id: attendingId, nickname });
+        if (!result.success) throw new Error(result.error);
+        // entries 업데이트
+        const idx = entries.findIndex(x => x.id === attendingId);
+        if (idx !== -1) entries[idx].attendees = result.attendees;
+        saveLocal(entries);
+      }
+      showToast(`${nickname}님 참여 완료!`);
+      openAttendModal(attendingId);
+      renderList();
+    } catch (err) {
+      showToast('참여 실패: ' + err.message);
+    }
+  }
+
+  async function removeAttendee(entryId, nickname) {
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'unattend', id: entryId, nickname });
+        if (!result.success) throw new Error(result.error);
+        const idx = entries.findIndex(x => x.id === entryId);
+        if (idx !== -1) entries[idx].attendees = result.attendees;
+        saveLocal(entries);
+      }
+      openAttendModal(entryId);
+      renderList();
+    } catch (err) {
+      showToast('취소 실패: ' + err.message);
+    }
+  }
+
+  // Enter키로 참여
+  document.getElementById('attendNickname').addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') submitAttend();
+  });
+
+  // ===== Helpers =====
+  // D-day 계산: 미래 날짜면 실제 날짜까지, 과거 날짜면 올해/내년 기념일까지
+  function getDaysUntil(dateStr) {
+    const d = parseDate(dateStr);
+    if (!d) return Infinity;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 결혼일 자체가 미래면 실제 날짜까지 D-day
+    const original = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (original >= today) {
+      return Math.ceil((original - today) / (1000 * 60 * 60 * 24));
+    }
+
+    // 과거 결혼일이면 올해 기념일 기준
+    const thisYear = today.getFullYear();
+    const next = new Date(thisYear, d.getMonth(), d.getDate());
+    if (next < today) next.setFullYear(thisYear + 1);
+    return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+  }
+
+  // 시간대 이슈 방지: 날짜를 로컬 시간대로 안전하게 파싱
+  function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr);
+    // ISO datetime (2026-08-27T15:00:00.000Z) → 로컬 시간대로 변환
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return null;
+    }
+    // YYYY-MM-DD 순수 날짜 문자열
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date(str);
+  }
+
+  // Sheets가 시간을 1899-12-30T... Date로 변환하는 문제 방어
+  // UTC → 로컬 시간대(KST 등)로 자동 변환
+  function parseTime(timeVal) {
+    if (!timeVal) return '';
+    const str = String(timeVal);
+    // 이미 HH:MM 형식이면 그대로
+    if (/^\d{1,2}:\d{2}$/.test(str)) return str;
+    // 1899-12-30T07:00:00.000Z 같은 ISO 형태 → Date로 파싱하여 로컬 시간 추출
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+      }
+    }
+    return '';
+  }
+
+  function formatDate(dateStr) {
+    const d = parseDate(dateStr);
+    if (!d || isNaN(d)) return '';
+    const days = ['일','월','화','수','목','금','토'];
+    return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. (${days[d.getDay()]})`;
+  }
+
+  function esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ===== Init =====
+  if (!isOnline()) {
+    document.getElementById('setupBanner').style.display = 'block';
+  }
+  loadFromSheet();
+</script>
+
+</body>
+</html>
