@@ -1178,13 +1178,18 @@
       const d = parseDate(e.date);
       const years = thisYear - d.getFullYear();
       const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+      const dday = getDaysUntil(e.date);
+      const ddayTag = dday === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
+        : dday <= 7 ? `<span class="upcoming-tag tag-soon">D-${dday}</span>`
+        : dday <= 30 ? `<span class="upcoming-tag tag-this-month">D-${dday}</span>`
+        : `<span class="upcoming-tag" style="background:var(--gray-100);color:var(--gray-500);">D-${dday}</span>`;
       return `<div class="entry-card">
         <div class="entry-date-badge">
           <span class="month">${d.getMonth() + 1}월</span>
           <span class="day">${d.getDate()}</span>
         </div>
         <div class="entry-info">
-          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''}</div>
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${ddayTag}</div>
           <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
           ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
           ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
