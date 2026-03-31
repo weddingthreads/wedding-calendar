@@ -987,7 +987,7 @@
 
     const thisMonthEntries = entries.filter(e => {
       const d = parseDate(e.date);
-      return d.getMonth() === thisMonth;
+      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
     });
     document.getElementById('thisMonthCount').textContent = thisMonthEntries.length;
 
@@ -1050,7 +1050,7 @@
     const eventMap = {};
     entries.forEach(e => {
       const d = parseDate(e.date);
-      if (d.getMonth() === currentMonth) {
+      if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
         const key = d.getDate();
         if (!eventMap[key]) eventMap[key] = [];
         eventMap[key].push(e);
@@ -1089,7 +1089,10 @@
     const grid = document.getElementById('monthGrid');
     const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
     const counts = new Array(12).fill(0);
-    entries.forEach(e => { counts[parseDate(e.date).getMonth()]++; });
+    entries.forEach(e => {
+      const d = parseDate(e.date);
+      if (d.getFullYear() === currentYear) counts[d.getMonth()]++;
+    });
 
     grid.innerHTML = months.map((m, i) =>
       `<button class="month-btn ${i === currentMonth ? 'active' : ''}" onclick="goMonth(${i})">
@@ -1111,10 +1114,10 @@
   function showDayPopup(year, month, day) {
     const evts = entries.filter(e => {
       const d = parseDate(e.date);
-      return d.getMonth() === month && d.getDate() === day;
+      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
     });
 
-    document.getElementById('dayPopupTitle').textContent = `${month + 1}월 ${day}일 결혼식`;
+    document.getElementById('dayPopupTitle').textContent = `${year}년 ${month + 1}월 ${day}일 결혼식`;
     document.getElementById('dayPopupList').innerHTML = evts.map(e => {
       const d = parseDate(e.date);
       const years = new Date().getFullYear() - d.getFullYear();
@@ -1297,15 +1300,20 @@
   }
 
   // Sheets가 시간을 1899-12-30T... Date로 변환하는 문제 방어
+  // UTC → 로컬 시간대(KST 등)로 자동 변환
   function parseTime(timeVal) {
     if (!timeVal) return '';
     const str = String(timeVal);
     // 이미 HH:MM 형식이면 그대로
     if (/^\d{1,2}:\d{2}$/.test(str)) return str;
-    // 1899-12-30T09:02:08.000Z 같은 형태 → 시간만 추출
-    if (str.includes('1899') || str.includes('T')) {
-      const match = str.match(/T(\d{2}):(\d{2})/);
-      if (match) return `${match[1]}:${match[2]}`;
+    // 1899-12-30T07:00:00.000Z 같은 ISO 형태 → Date로 파싱하여 로컬 시간 추출
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+      }
     }
     return '';
   }
