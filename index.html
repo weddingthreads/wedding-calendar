@@ -773,8 +773,8 @@
 </div>
 
 <div class="header">
-  <h1>스친이들의 Wedding Day</h1>
-  <p>소중한 날을 함께 기억해요</p>
+  <h1>Wedding Day</h1>
+  <p>공주들의 소중한 날을 함께 기억해요</p>
   <div class="stats">
     <div class="stat-item">
       <div class="stat-num" id="totalCount">0</div>
@@ -1445,6 +1445,10 @@
     if (!nickname) { showToast('닉네임을 입력해주세요'); return; }
 
     const current = getAttendees(attendingId);
+    if (current.length >= 10) {
+      showToast('참여 인원이 가득 찼습니다 (최대 10명)');
+      return;
+    }
     if (current.includes(nickname)) {
       showToast('이미 참여한 닉네임입니다');
       return;
@@ -1468,6 +1472,7 @@
   }
 
   async function removeAttendee(entryId, nickname) {
+    if (!confirm(`${nickname}님의 참여를 취소하시겠습니까?`)) return;
     try {
       if (isOnline()) {
         const result = await apiCall({ action: 'unattend', id: entryId, nickname });
