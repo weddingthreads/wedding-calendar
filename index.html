@@ -487,7 +487,7 @@
 
   .entry-detail { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px; }
 
-  .entry-memo { font-size: 0.75rem; color: var(--text-quaternary); margin-top: var(--spacing-xs); font-style: italic; }
+  .entry-memo { font-size: 0.75rem; color: var(--text-quaternary); margin-top: var(--spacing-xs); }
 
   .entry-actions { display: flex; gap: var(--spacing-sm); }
 
@@ -673,7 +673,7 @@
 </div>
 
 <div class="header">
-  <h1>우리들의 결혼기념일</h1>
+  <h1>스친이들의 Wedding Day</h1>
   <p>소중한 날을 함께 기억해요</p>
   <div class="stats">
     <div class="stat-item">
@@ -682,7 +682,7 @@
     </div>
     <div class="stat-item">
       <div class="stat-num" id="thisMonthCount">0</div>
-      <div class="stat-label">이번 달 기념일</div>
+      <div class="stat-label">이번 달 결혼</div>
     </div>
     <div class="stat-item">
       <div class="stat-num" id="upcomingCount">0</div>
@@ -713,14 +713,14 @@
   <!-- Register Tab -->
   <div class="section-panel active" id="panel-register">
     <div class="form-card">
-      <h2>결혼기념일 등록</h2>
+      <h2>결혼일 등록</h2>
       <div class="form-grid">
         <div class="form-group">
           <label>이름</label>
           <input type="text" id="inputName" placeholder="예: 홍길동">
         </div>
         <div class="form-group">
-          <label>결혼기념일</label>
+          <label>결혼일</label>
           <input type="date" id="inputDate">
         </div>
         <div class="form-group">
@@ -735,13 +735,9 @@
           <label>연락처 (선택)</label>
           <input type="text" id="inputContact" placeholder="예: 010-1234-5678">
         </div>
-        <div class="form-group">
-          <label>장소 (선택)</label>
-          <input type="text" id="inputVenue" placeholder="예: 더채플앳청담">
-        </div>
         <div class="form-group full">
-          <label>메모 (선택)</label>
-          <textarea id="inputMemo" placeholder="장소, 축하 메시지 등을 남겨주세요"></textarea>
+          <label>장소 (선택)</label>
+          <input type="text" id="inputMemo" placeholder="예: 더채플앳청담">
         </div>
         <button class="btn-submit" id="btnSubmit" onclick="addEntry()">등록하기</button>
       </div>
@@ -797,7 +793,7 @@
       <input type="text" id="editName">
     </div>
     <div class="form-group">
-      <label>결혼기념일</label>
+      <label>결혼일</label>
       <input type="date" id="editDate">
     </div>
     <div class="form-group">
@@ -813,8 +809,8 @@
       <input type="text" id="editContact">
     </div>
     <div class="form-group">
-      <label>메모</label>
-      <textarea id="editMemo" style="resize:none;height:60px;width:100%;padding:10px 12px;border:1.5px solid #e0d6cc;border-radius:10px;font-size:14px;font-family:inherit;outline:none;background:#faf7f5;"></textarea>
+      <label>장소</label>
+      <input type="text" id="editMemo">
     </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeEditModal()">취소</button>
@@ -938,7 +934,7 @@
     const memo = document.getElementById('inputMemo').value.trim();
 
     if (!name) { showToast('이름을 입력해주세요'); return; }
-    if (!date) { showToast('결혼기념일을 선택해주세요'); return; }
+    if (!date) { showToast('결혼일을 선택해주세요'); return; }
 
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true;
@@ -971,7 +967,7 @@
       document.getElementById('inputContact').value = '';
       document.getElementById('inputMemo').value = '';
 
-      showToast(`${name}님의 기념일이 등록되었습니다!`);
+      showToast(`${name}님의 결혼일이 등록되었습니다!`);
       refreshAll();
     } catch (err) {
       showToast('등록 실패: ' + err.message);
@@ -996,10 +992,7 @@
     document.getElementById('thisMonthCount').textContent = thisMonthEntries.length;
 
     const upcoming = entries.filter(e => {
-      const d = parseDate(e.date);
-      const next = new Date(thisYear, d.getMonth(), d.getDate());
-      if (next < now) next.setFullYear(thisYear + 1);
-      const diff = (next - now) / (1000 * 60 * 60 * 24);
+      const diff = getDaysUntil(e.date);
       return diff >= 0 && diff <= 7;
     });
     document.getElementById('upcomingCount').textContent = upcoming.length;
@@ -1013,18 +1006,14 @@
     const section = document.getElementById('upcomingSection');
 
     const withDiff = entries.map(e => {
-      const d = parseDate(e.date);
-      const next = new Date(thisYear, d.getMonth(), d.getDate());
-      if (next < today) next.setFullYear(thisYear + 1);
-      const diff = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
-      return { ...e, daysUntil: diff };
+      return { ...e, daysUntil: getDaysUntil(e.date) };
     }).filter(e => e.daysUntil >= 0 && e.daysUntil <= 30)
       .sort((a, b) => a.daysUntil - b.daysUntil);
 
     if (withDiff.length === 0) { section.innerHTML = ''; return; }
 
     section.innerHTML = `
-      <div class="upcoming-header">다가오는 기념일</div>
+      <div class="upcoming-header">다가오는 결혼식</div>
       <div class="entry-list">
         ${withDiff.map(e => {
           const d = parseDate(e.date);
@@ -1042,7 +1031,7 @@
             <div class="entry-info">
               <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${tag}</div>
               <div class="entry-detail">${formatDate(e.date)}${timeText}${yearText}</div>
-              ${e.memo ? `<div class="entry-memo">"${esc(e.memo)}"</div>` : ''}
+              ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -1125,7 +1114,7 @@
       return d.getMonth() === month && d.getDate() === day;
     });
 
-    document.getElementById('dayPopupTitle').textContent = `${month + 1}월 ${day}일 기념일`;
+    document.getElementById('dayPopupTitle').textContent = `${month + 1}월 ${day}일 결혼식`;
     document.getElementById('dayPopupList').innerHTML = evts.map(e => {
       const d = parseDate(e.date);
       const years = new Date().getFullYear() - d.getFullYear();
@@ -1138,7 +1127,7 @@
         <div class="entry-info">
           <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''}</div>
           <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
-          ${e.memo ? `<div class="entry-memo">"${esc(e.memo)}"</div>` : ''}
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
         </div>
       </div>`;
     }).join('');
@@ -1178,7 +1167,7 @@
 
     const listEl = document.getElementById('entryList');
     if (filtered.length === 0) {
-      listEl.innerHTML = `<div class="empty-state"><div class="emoji">💍</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 기념일이 없습니다'}</p></div>`;
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">💍</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 결혼일이 없습니다'}</p></div>`;
       return;
     }
 
@@ -1195,7 +1184,7 @@
           <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''}</div>
           <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
           ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
-          ${e.memo ? `<div class="entry-memo">"${esc(e.memo)}"</div>` : ''}
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
         </div>
         <div class="entry-actions">
           <button class="btn-icon" onclick="openEdit('${e.id}')" title="수정">&#9998;</button>
@@ -1276,6 +1265,26 @@
   }
 
   // ===== Helpers =====
+  // D-day 계산: 미래 날짜면 실제 날짜까지, 과거 날짜면 올해/내년 기념일까지
+  function getDaysUntil(dateStr) {
+    const d = parseDate(dateStr);
+    if (!d) return Infinity;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 결혼일 자체가 미래면 실제 날짜까지 D-day
+    const original = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (original >= today) {
+      return Math.ceil((original - today) / (1000 * 60 * 60 * 24));
+    }
+
+    // 과거 결혼일이면 올해 기념일 기준
+    const thisYear = today.getFullYear();
+    const next = new Date(thisYear, d.getMonth(), d.getDate());
+    if (next < today) next.setFullYear(thisYear + 1);
+    return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+  }
+
   // 시간대 이슈 방지: YYYY-MM-DD를 로컬 날짜로 안전하게 파싱
   function parseDate(dateStr) {
     if (!dateStr) return null;
