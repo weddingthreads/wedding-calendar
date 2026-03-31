@@ -735,6 +735,10 @@
           <label>연락처 (선택)</label>
           <input type="text" id="inputContact" placeholder="예: 010-1234-5678">
         </div>
+        <div class="form-group">
+          <label>장소 (선택)</label>
+          <input type="text" id="inputVenue" placeholder="예: 더채플앳청담">
+        </div>
         <div class="form-group full">
           <label>메모 (선택)</label>
           <textarea id="inputMemo" placeholder="장소, 축하 메시지 등을 남겨주세요"></textarea>
@@ -986,13 +990,13 @@
     document.getElementById('totalCount').textContent = entries.length;
 
     const thisMonthEntries = entries.filter(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       return d.getMonth() === thisMonth;
     });
     document.getElementById('thisMonthCount').textContent = thisMonthEntries.length;
 
     const upcoming = entries.filter(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       const next = new Date(thisYear, d.getMonth(), d.getDate());
       if (next < now) next.setFullYear(thisYear + 1);
       const diff = (next - now) / (1000 * 60 * 60 * 24);
@@ -1009,7 +1013,7 @@
     const section = document.getElementById('upcomingSection');
 
     const withDiff = entries.map(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       const next = new Date(thisYear, d.getMonth(), d.getDate());
       if (next < today) next.setFullYear(thisYear + 1);
       const diff = Math.ceil((next - today) / (1000 * 60 * 60 * 24));
@@ -1023,7 +1027,7 @@
       <div class="upcoming-header">다가오는 기념일</div>
       <div class="entry-list">
         ${withDiff.map(e => {
-          const d = new Date(e.date);
+          const d = parseDate(e.date);
           const tag = e.daysUntil === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
             : e.daysUntil <= 7 ? `<span class="upcoming-tag tag-soon">D-${e.daysUntil}</span>`
             : `<span class="upcoming-tag tag-this-month">D-${e.daysUntil}</span>`;
@@ -1056,7 +1060,7 @@
 
     const eventMap = {};
     entries.forEach(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       if (d.getMonth() === currentMonth) {
         const key = d.getDate();
         if (!eventMap[key]) eventMap[key] = [];
@@ -1096,7 +1100,7 @@
     const grid = document.getElementById('monthGrid');
     const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
     const counts = new Array(12).fill(0);
-    entries.forEach(e => { counts[new Date(e.date).getMonth()]++; });
+    entries.forEach(e => { counts[parseDate(e.date).getMonth()]++; });
 
     grid.innerHTML = months.map((m, i) =>
       `<button class="month-btn ${i === currentMonth ? 'active' : ''}" onclick="goMonth(${i})">
@@ -1117,13 +1121,13 @@
   // ===== Day Popup =====
   function showDayPopup(year, month, day) {
     const evts = entries.filter(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       return d.getMonth() === month && d.getDate() === day;
     });
 
     document.getElementById('dayPopupTitle').textContent = `${month + 1}월 ${day}일 기념일`;
     document.getElementById('dayPopupList').innerHTML = evts.map(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       const years = new Date().getFullYear() - d.getFullYear();
       const timeText = e.time ? ` ${e.time}` : '';
       return `<div class="entry-card" style="margin-bottom:8px">
@@ -1157,12 +1161,12 @@
     );
 
     if (sort === 'date') {
-      filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+      filtered.sort((a, b) => parseDate(a.date) - parseDate(b.date));
     } else if (sort === 'name') {
       filtered.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
     } else {
       filtered.sort((a, b) => {
-        const da = new Date(a.date), db = new Date(b.date);
+        const da = parseDate(a.date), db = parseDate(b.date);
         let na = new Date(thisYear, da.getMonth(), da.getDate());
         let nb = new Date(thisYear, db.getMonth(), db.getDate());
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1179,7 +1183,7 @@
     }
 
     listEl.innerHTML = filtered.map(e => {
-      const d = new Date(e.date);
+      const d = parseDate(e.date);
       const years = thisYear - d.getFullYear();
       const timeText = e.time ? ` ${e.time}` : '';
       return `<div class="entry-card">
@@ -1272,8 +1276,20 @@
   }
 
   // ===== Helpers =====
+  // 시간대 이슈 방지: YYYY-MM-DD를 로컬 날짜로 안전하게 파싱
+  function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr);
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date(str);
+  }
+
   function formatDate(dateStr) {
-    const d = new Date(dateStr);
+    const d = parseDate(dateStr);
+    if (!d || isNaN(d)) return '';
     const days = ['일','월','화','수','목','금','토'];
     return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. (${days[d.getDay()]})`;
   }
