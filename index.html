@@ -1202,9 +1202,19 @@
     const e = entries.find(x => x.id === id);
     if (!e) return;
     editingId = id;
-    document.getElementById('editName').value = e.name;
-    document.getElementById('editDate').value = e.date;
-    document.getElementById('editTime').value = e.time || '';
+    document.getElementById('editName').value = e.name || '';
+    // date input은 YYYY-MM-DD 형식 필요
+    const d = parseDate(e.date);
+    if (d && !isNaN(d)) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      document.getElementById('editDate').value = `${y}-${m}-${day}`;
+    } else {
+      document.getElementById('editDate').value = '';
+    }
+    // time input은 HH:MM 형식 필요
+    document.getElementById('editTime').value = parseTime(e.time) || '';
     document.getElementById('editSpouse').value = e.spouse || '';
     document.getElementById('editContact').value = e.contact || '';
     document.getElementById('editMemo').value = e.memo || '';
