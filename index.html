@@ -26,7 +26,7 @@
     --warning-500: #F79009; --warning-600: #DC6803; --warning-700: #B54708;
     --success-50: #ECFDF3; --success-100: #D1FADF; --success-300: #6CE9A6;
     --success-500: #12B76A; --success-600: #039855; --success-700: #027A48;
-1
+
     /* Semantic */
     --text-primary: var(--gray-900);
     --text-secondary: var(--gray-700);
@@ -1905,23 +1905,46 @@
   let tipsLoaded = false;
   let activeCategory = '전체';
 
+  // JSONP-style loader for Google Sheets (works from file:// too)
+  function loadSheetJSONP(sheetId, sheetName) {
+    return new Promise((resolve, reject) => {
+      const callbackName = '_sheetCb_' + Math.random().toString(36).slice(2);
+      const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${callbackName}&sheet=${encodeURIComponent(sheetName)}`;
+      window[callbackName] = function(response) {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        if (response && response.table) {
+          const rows = (response.table.rows || []).map(r =>
+            (r.c || []).map(cell => cell ? (cell.v != null ? String(cell.v) : '') : '')
+          );
+          resolve(rows);
+        } else {
+          reject(new Error('Invalid response'));
+        }
+      };
+      const script = document.createElement('script');
+      script.src = url;
+      script.onerror = () => { delete window[callbackName]; reject(new Error('Script load failed')); };
+      document.body.appendChild(script);
+    });
+  }
+
   async function loadTips() {
     const accordion = document.getElementById('tipsAccordion');
     accordion.innerHTML = '<div class="tips-loading">꿀팁을 불러오는 중...</div>';
 
     try {
-      // Google Sheets public CSV export
-      const url = `https://docs.google.com/spreadsheets/d/${TIPS_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(TIPS_SHEET_NAME)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Sheets fetch failed');
-      const csv = await res.text();
-      tipsData = parseTipsCSV(csv);
+      const rows = await loadSheetJSONP(TIPS_SHEET_ID, TIPS_SHEET_NAME);
+      tipsData = rows.filter(r => r[0]).map(r => ({
+        category: r[0] || '',
+        tip: r[1] || '',
+        tags: (r[2] || '').split(',').map(t => t.trim()).filter(Boolean)
+      }));
       tipsLoaded = true;
       renderTipsChips();
       renderTips();
     } catch (err) {
       console.error('Tips load error:', err);
-      // Fallback: try loading from embedded data
       accordion.innerHTML = '<div class="tips-empty">꿀팁을 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
     }
   }
@@ -2090,17 +2113,19 @@
   const BUDDY_STORAGE_KEY = 'wedding_buddy_codes';
 
   async function loadBuddyCodes() {
-    const listEl = document.getElementById('buddyList');
+    const listEl = document.getElementById('buddyAccordion');
     listEl.innerHTML = '<div class="tips-loading">짝꿍코드를 불러오는 중...</div>';
 
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${BUDDY_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(BUDDY_SHEET_NAME)}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Sheets fetch failed');
-      const csv = await res.text();
-      buddyData = parseBuddyCSV(csv);
+      const rows = await loadSheetJSONP(BUDDY_SHEET_ID, BUDDY_SHEET_NAME);
+      buddyData = rows.filter(r => r[0]).map(r => ({
+        vendor: r[0] || '',
+        category: r[1] || '기타',
+        code: r[2] || '',
+        benefit: r[3] || '',
+        expiry: r[4] || '',
+      }));
       buddyLoaded = true;
-      // Merge local pending entries
       const local = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
       local.forEach(l => {
         if (!buddyData.some(b => b.vendor === l.vendor && b.code === l.code)) {
@@ -2111,7 +2136,6 @@
       renderBuddyList();
     } catch (err) {
       console.error('Buddy load error:', err);
-      // Fallback to local
       buddyData = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
       if (buddyData.length) {
         renderBuddyChips();
