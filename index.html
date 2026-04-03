@@ -3,680 +3,2356 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>크로스셀 복합 효과 — IR Slide Deck</title>
+<title>스친이들의 결혼 캘린더</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+  /* ===== EMR Design Tokens (CSS Variables) ===== */
+  :root {
+    /* Brand - Soft Blush Pink */
+    --brand-25: #FFF9FA; --brand-50: #FFF3F5; --brand-100: #FFE8ED;
+    --brand-200: #FFD5DE; --brand-300: #FFB3C4; --brand-400: #F98DA8;
+    --brand-500: #EE6B8A; --brand-600: #DC4B6E; --brand-700: #C03558;
+    --brand-800: #A12B4A; --brand-900: #872541;
+
+    /* Gray */
+    --gray-25: #FCFCFD; --gray-50: #F9FAFB; --gray-100: #F2F4F7;
+    --gray-200: #EAECF0; --gray-300: #D0D5DD; --gray-400: #98A2B3;
+    --gray-500: #667085; --gray-600: #475467; --gray-700: #344054;
+    --gray-800: #1D2939; --gray-900: #101828; --gray-950: #0C111D;
+
+    /* Status */
+    --error-50: #FEF3F2; --error-100: #FEE4E2; --error-300: #FDA29B;
+    --error-400: #F97066; --error-500: #F04438; --error-600: #D92D20; --error-700: #B42318;
+    --warning-50: #FFFAEB; --warning-100: #FEF0C7; --warning-300: #FEC84B;
+    --warning-500: #F79009; --warning-600: #DC6803; --warning-700: #B54708;
+    --success-50: #ECFDF3; --success-100: #D1FADF; --success-300: #6CE9A6;
+    --success-500: #12B76A; --success-600: #039855; --success-700: #027A48;
+1
+    /* Semantic */
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-700);
+    --text-tertiary: var(--gray-600);
+    --text-quaternary: var(--gray-500);
+    --text-placeholder: var(--gray-500);
+    --text-brand-primary: var(--brand-900);
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #FFFBFC;
+    --bg-secondary-hover: #FFF5F7;
+    --bg-tertiary: #FFF3F5;
+    --bg-brand-primary: var(--brand-50);
+    --bg-brand-solid: var(--brand-600);
+    --border-primary: var(--gray-300);
+    --border-secondary: var(--gray-200);
+    --border-tertiary: var(--gray-100);
+
+    /* Shadow */
+    --shadow-xs: 0px 1px 2px 0px rgba(16,24,40,0.05);
+    --shadow-sm: 0px 1px 2px 0px rgba(16,24,40,0.06), 0px 1px 3px 0px rgba(16,24,40,0.10);
+    --shadow-md: 0px 2px 4px -2px rgba(16,24,40,0.06), 0px 4px 8px -2px rgba(16,24,40,0.10);
+    --shadow-lg: 0px 4px 6px -2px rgba(16,24,40,0.03), 0px 12px 16px -4px rgba(16,24,40,0.08);
+
+    /* Radius */
+    --rounded-md: 0.5rem;
+    --rounded-lg: 0.625rem;
+    --rounded-xl: 0.75rem;
+    --rounded-2xl: 1rem;
+    --rounded-full: 9999px;
+
+    /* Spacing */
+    --spacing-xs: 0.25rem; --spacing-sm: 0.375rem; --spacing-md: 0.5rem;
+    --spacing-lg: 0.75rem; --spacing-xl: 1rem; --spacing-2xl: 1.25rem;
+    --spacing-3xl: 1.5rem; --spacing-4xl: 2rem;
+  }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #E8E8E8;
+    font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #FFB3C4 0%, #F98DA8 50%, #EE6B8A 100%);
+    padding: var(--spacing-4xl) var(--spacing-2xl) var(--spacing-3xl);
+    text-align: center;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    margin-bottom: var(--spacing-xs);
+    letter-spacing: -0.5px;
+  }
+
+  .header p {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--brand-200);
+  }
+
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-3xl);
+    margin-top: var(--spacing-xl);
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-num {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    color: var(--brand-200);
+    margin-top: 2px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(249,250,251,0.85);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  .loading-overlay.show { display: flex; }
+
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--brand-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text { font-size: 0.875rem; color: var(--text-tertiary); }
+
+  /* Sync indicator */
+  .sync-bar {
+    text-align: center;
+    padding: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--text-quaternary);
+    background: var(--bg-tertiary);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .sync-bar:hover { background: var(--bg-secondary-hover); }
+  .sync-bar.error { background: var(--error-50); color: var(--error-600); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    background: var(--bg-tertiary);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xs);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .tab {
+    flex: 1;
+    padding: var(--spacing-lg);
+    text-align: center;
+    border-radius: var(--rounded-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-quaternary);
+    border: none;
+    background: transparent;
+  }
+
+  .tab.active {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Form */
+  .form-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .form-card h2 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .form-group.full { grid-column: 1 / -1; }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .form-group input, .form-group textarea {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .form-group input::placeholder, .form-group textarea::placeholder {
+    color: var(--text-placeholder);
+  }
+
+  .form-group input:focus, .form-group textarea:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .form-group textarea { resize: none; height: 60px; }
+
+  .btn-submit {
+    grid-column: 1 / -1;
+    padding: var(--spacing-lg);
+    background: var(--brand-600);
+    color: #FFFFFF;
+    border: 1px solid var(--brand-600);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: var(--spacing-xs);
+  }
+
+  .btn-submit:hover { background: var(--brand-700); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Calendar */
+  .calendar-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-2xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .cal-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .cal-nav button {
+    width: 36px; height: 36px;
+    border-radius: var(--rounded-full);
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: background 0.2s;
+  }
+
+  .cal-nav button:hover { background: var(--bg-secondary-hover); }
+
+  .cal-nav .cal-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .cal-weekdays span {
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-quaternary);
+    padding: var(--spacing-xs);
+  }
+
+  .cal-weekdays span:first-child { color: var(--error-400); }
+  .cal-weekdays span:last-child { color: var(--brand-500); }
+
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 20px;
-    gap: 60px;
-  }
-
-  .slide-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: #888;
-    letter-spacing: 2px;
-    margin-bottom: -40px;
-  }
-
-  .slide {
-    width: 1280px;
-    height: 720px;
-    background: #FFFFFF;
+    justify-content: center;
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    color: var(--text-primary);
     position: relative;
+    cursor: default;
+    transition: background 0.15s;
+  }
+
+  .cal-day.empty { opacity: 0; }
+  .cal-day.today { background: var(--bg-tertiary); font-weight: 700; }
+
+  .cal-day.has-event {
+    background: var(--brand-50);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--brand-700);
+  }
+
+  .cal-day.has-event:hover {
+    background: var(--brand-100);
+  }
+
+  .cal-day .dot-row { display: flex; gap: 2px; margin-top: 2px; }
+  .cal-day .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand-500); }
+  .cal-day .dot-more { font-size: 8px; color: var(--brand-500); font-weight: 700; }
+  .cal-day.sunday { color: var(--error-400); }
+  .cal-day.saturday { color: var(--brand-500); }
+  .cal-day.has-event.sunday, .cal-day.has-event.saturday { color: var(--brand-700); }
+
+  /* Popup */
+  .day-popup {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+
+  .day-popup.show { display: flex; }
+
+  .day-popup-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 380px;
+    width: 100%;
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .day-popup-close {
+    position: absolute;
+    top: var(--spacing-lg); right: var(--spacing-lg);
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: var(--gray-400);
+  }
+
+  .day-popup h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  /* List */
+  .section-panel { display: none; }
+  .section-panel.active { display: block; }
+
+  .search-bar {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .search-bar input:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .search-bar select {
+    padding: var(--spacing-lg) var(--spacing-lg);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+
+  .entry-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .entry-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xl);
+    transition: box-shadow 0.15s;
+  }
+
+  .entry-card:hover { box-shadow: var(--shadow-sm); }
+
+  .entry-date-badge {
+    width: 48px; height: 52px;
+    border-radius: var(--rounded-lg);
+    background: var(--brand-600);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .entry-date-badge .month { font-size: 0.625rem; font-weight: 700; color: var(--brand-100); }
+  .entry-date-badge .day { font-size: 1.25rem; font-weight: 800; color: #FFFFFF; line-height: 1; }
+
+  .entry-info { flex: 1; min-width: 0; }
+
+  .entry-name { font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+
+  .entry-detail { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px; }
+
+  .entry-memo { font-size: 0.75rem; color: var(--text-quaternary); margin-top: var(--spacing-xs); }
+
+  .entry-actions { display: flex; gap: var(--spacing-sm); }
+
+  .btn-icon {
+    width: 32px; height: 32px;
+    border-radius: var(--rounded-md);
+    border: 1px solid var(--border-secondary);
+    background: var(--bg-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--text-tertiary);
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover { background: var(--bg-secondary-hover); }
+  .btn-icon.delete:hover { background: var(--error-50); color: var(--error-600); }
+
+  .btn-attend {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 4px 10px;
+    border-radius: var(--rounded-full);
+    border: 1px solid var(--brand-200);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-attend:hover { background: var(--brand-100); }
+  .btn-attend .attend-count {
+    background: var(--brand-600);
+    color: #fff;
+    border-radius: var(--rounded-full);
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625rem;
+    font-weight: 700;
+  }
+
+  .attendees-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--spacing-xs);
+  }
+  .attendee-chip {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: var(--rounded-full);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  /* Attend modal */
+  .attend-modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 160;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+  .attend-modal.show { display: flex; }
+  .attend-modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 340px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+  }
+  .attend-modal-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+  .attend-modal-content input {
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+  }
+  .attend-modal-content input:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+  .attend-modal-btns {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+  .attend-modal-btns button {
+    flex: 1;
+    padding: var(--spacing-lg);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .upcoming-header {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .upcoming-tag {
+    display: inline-block;
+    padding: 2px var(--spacing-md);
+    border-radius: var(--rounded-full);
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-left: var(--spacing-sm);
+  }
+
+  .tag-today { background: var(--error-50); color: var(--error-700); }
+  .tag-soon { background: var(--warning-50); color: var(--warning-700); }
+  .tag-this-month { background: var(--success-50); color: var(--success-700); }
+
+  .empty-state {
+    text-align: center;
+    padding: var(--spacing-4xl) var(--spacing-2xl);
+    color: var(--text-quaternary);
+  }
+
+  .empty-state .emoji { font-size: 48px; margin-bottom: var(--spacing-lg); }
+  .empty-state p { font-size: 0.875rem; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--gray-900);
+    color: #FFFFFF;
+    padding: var(--spacing-lg) var(--spacing-3xl);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 200;
+    transition: transform 0.3s;
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .month-btn {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--border-secondary);
+    border-radius: var(--rounded-md);
+    background: var(--bg-primary);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+
+  .month-btn:hover { background: var(--bg-secondary-hover); }
+  .month-btn.active { background: var(--brand-600); color: #FFFFFF; border-color: var(--brand-600); }
+  .month-btn .count { font-size: 0.625rem; color: var(--text-quaternary); display: block; }
+  .month-btn.active .count { color: var(--brand-200); }
+
+  /* Edit modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(16,24,40,0.4);
+    z-index: 150;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-2xl);
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .modal-content h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .modal-content .form-group { margin-bottom: var(--spacing-lg); }
+
+  .modal-btns {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-2xl);
+  }
+
+  .modal-btns button {
+    flex: 1;
+    padding: var(--spacing-lg);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn-cancel {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+  }
+  .btn-cancel:hover { background: var(--bg-secondary-hover); }
+
+  .btn-save {
+    background: var(--brand-600);
+    color: #FFFFFF;
+  }
+  .btn-save:hover { background: var(--brand-700); }
+
+  /* Setup banner */
+  .setup-banner {
+    background: var(--warning-50);
+    border: 1px solid var(--warning-300);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-2xl);
+    font-size: 0.8125rem;
+    color: var(--warning-700);
+    line-height: 1.6;
+  }
+  .setup-banner code {
+    background: var(--warning-100);
+    padding: 2px var(--spacing-sm);
+    border-radius: var(--spacing-xs);
+    font-size: 0.75rem;
+  }
+
+  /* Tips Tab */
+  .tips-search {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    width: 100%;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+    font-family: inherit;
+  }
+  .tips-search:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .tips-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .chip {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--rounded-full);
+    border: 1px solid var(--border-secondary);
+    background: var(--bg-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .chip:hover { background: var(--bg-secondary-hover); }
+  .chip.active {
+    background: var(--brand-600);
+    color: #FFFFFF;
+    border-color: var(--brand-600);
+  }
+  .chip .chip-count {
+    font-size: 0.625rem;
+    opacity: 0.7;
+    margin-left: 2px;
+  }
+
+  .accordion-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .accordion {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-xl);
+    border: 1px solid var(--border-secondary);
     overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow-xs);
   }
 
-  .section-tag {
-    position: absolute;
-    top: 36px;
-    left: 48px;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 1.5px;
-    color: #1A1A1A;
+  .accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-xl);
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .accordion-header:hover { background: var(--bg-secondary-hover); }
+
+  .accordion-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
   }
 
-  .footer {
-    position: absolute;
-    bottom: 20px;
-    right: 48px;
-    font-size: 11px;
-    color: #BBB;
-    font-weight: 400;
+  .accordion-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
   }
 
-  @media print {
-    body { background: #fff; padding: 0; gap: 0; }
-    .slide { box-shadow: none; page-break-after: always; }
-    .slide-label { display: none; }
+  .accordion-count {
+    font-size: 0.75rem;
+    color: var(--text-quaternary);
+    background: var(--bg-tertiary);
+    padding: 2px var(--spacing-md);
+    border-radius: var(--rounded-full);
+  }
+
+  .accordion-arrow {
+    font-size: 14px;
+    color: var(--text-quaternary);
+    transition: transform 0.2s;
+  }
+  .accordion.open .accordion-arrow { transform: rotate(180deg); }
+
+  .accordion-body {
+    display: none;
+    padding: 0 var(--spacing-xl) var(--spacing-xl);
+  }
+  .accordion.open .accordion-body { display: block; }
+
+  .tip-card {
+    background: var(--bg-secondary);
+    border-radius: var(--rounded-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--border-tertiary);
+  }
+  .tip-card:last-child { margin-bottom: 0; }
+
+  .tip-text {
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .tip-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: var(--spacing-md);
+  }
+
+  .tip-tag {
+    display: inline-block;
+    padding: 1px var(--spacing-md);
+    border-radius: var(--rounded-full);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .tip-tag:hover { background: var(--brand-100); }
+
+  .tips-empty {
+    text-align: center;
+    padding: var(--spacing-4xl);
+    color: var(--text-quaternary);
+    font-size: 0.875rem;
+  }
+
+  .tips-loading {
+    text-align: center;
+    padding: var(--spacing-4xl);
+    color: var(--text-quaternary);
+    font-size: 0.875rem;
+  }
+
+  /* Buddy Code Tab */
+  .buddy-form {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-2xl);
+    padding: var(--spacing-3xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--spacing-2xl);
+    border: 1px solid var(--border-secondary);
+  }
+
+  .buddy-form h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .buddy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+  }
+
+  .buddy-grid .form-group.full { grid-column: 1 / -1; }
+
+  .buddy-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .buddy-list-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .buddy-list-count {
+    font-size: 0.75rem;
+    color: var(--text-quaternary);
+    background: var(--bg-tertiary);
+    padding: 2px var(--spacing-md);
+    border-radius: var(--rounded-full);
+  }
+
+  .buddy-filters {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .buddy-filters input {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--rounded-md);
+    font-size: 0.875rem;
+    outline: none;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+  }
+  .buddy-filters input:focus {
+    border-color: var(--brand-300);
+    box-shadow: 0px 0px 0px 4px var(--brand-50), var(--shadow-xs);
+  }
+
+  .buddy-card {
+    background: var(--bg-primary);
+    border-radius: var(--rounded-xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-xs);
+    border: 1px solid var(--border-secondary);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-xl);
+    transition: box-shadow 0.15s;
+  }
+  .buddy-card:hover { box-shadow: var(--shadow-sm); }
+  .buddy-card.stale { opacity: 0.55; }
+
+  .buddy-icon {
+    width: 40px; height: 40px;
+    border-radius: var(--rounded-lg);
+    background: var(--brand-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .buddy-info { flex: 1; min-width: 0; }
+
+  .buddy-vendor {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .buddy-benefit {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  .buddy-meta {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-sm);
+    font-size: 0.6875rem;
+    color: var(--text-quaternary);
+  }
+
+  .buddy-category-badge {
+    display: inline-block;
+    padding: 1px var(--spacing-md);
+    border-radius: var(--rounded-full);
+    background: var(--brand-50);
+    color: var(--brand-700);
+    font-size: 0.6875rem;
+    font-weight: 500;
+  }
+
+  @media (max-width: 500px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .buddy-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 1.375rem; }
+    .cal-day { font-size: 0.75rem; }
+    .tips-chips { gap: 4px; }
+    .chip { font-size: 0.6875rem; padding: 4px 8px; }
   }
 </style>
 </head>
 <body>
 
-<!-- ================================ -->
-<!-- SLIDE 1: 계단식 성장 Overview     -->
-<!-- ================================ -->
-<div class="slide-label">1 &mdash; 서비스를 추가할수록 매출이 오른다</div>
-<div class="slide" id="slide-1">
-  <div class="section-tag">CROSS-SELL IMPACT</div>
-
-  <div style="position:absolute; top:68px; left:48px; right:48px;">
-    <h1 style="font-size:30px; font-weight:900; color:#111; line-height:1.25; margin-bottom:4px;">
-      서비스를 추가할 때마다 매출이 계단식으로 올라간다
-    </h1>
-    <div style="font-size:14px; font-weight:400; color:#777;">
-      322개 한의원 &middot; 동일 한의원 Before/After &middot; 전 단계 p&lt;0.001 통계적 유의
-    </div>
-  </div>
-
-  <!-- Hero KPI Strip -->
-  <div style="position:absolute; top:136px; left:48px; right:48px; display:flex; background:#111; border-radius:12px; overflow:hidden;">
-    <div style="flex:1; padding:14px 20px; text-align:center; border-right:1px solid #333;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">분석 대상</div>
-      <div style="font-size:26px; font-weight:900; color:#fff;">322<span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.6);">개 한의원</span></div>
-    </div>
-    <div style="flex:1; padding:14px 20px; text-align:center; border-right:1px solid #333;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">풀세트 시 총매출</div>
-      <div style="font-size:26px; font-weight:900; color:#34D399;">+30<span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.6);">%</span></div>
-    </div>
-    <div style="flex:1; padding:14px 20px; text-align:center; border-right:1px solid #333;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">풀세트 시 비급여</div>
-      <div style="font-size:26px; font-weight:900; color:#60A5FA;">+51~60<span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.6);">%</span></div>
-    </div>
-    <div style="flex:1; padding:14px 20px; text-align:center; background:#2563EB;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.7); margin-bottom:2px;">효과 발현 비율</div>
-      <div style="font-size:26px; font-weight:900; color:#fff;">77~85<span style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.7);">%</span></div>
-    </div>
-  </div>
-
-  <!-- Two Columns -->
-  <div style="position:absolute; top:218px; left:48px; right:48px; bottom:50px; display:flex; gap:20px;">
-
-    <!-- LEFT: 계단식 Before/After -->
-    <div style="flex:1;">
-      <div style="font-size:13px; font-weight:800; color:#111; margin-bottom:14px;">단계별 Before/After (동일 한의원, 중앙값)</div>
-
-      <!-- STEP 0→1 -->
-      <div style="background:#EFF6FF; border:2px solid #BFDBFE; border-radius:12px; padding:14px 16px; margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:12px; font-weight:800; color:#1D4ED8;">0 &rarr; 1 &mdash; 첫 서비스 도입</div>
-          <div style="background:#2563EB; color:#fff; font-size:14px; font-weight:900; padding:3px 12px; border-radius:7px;">+35.3%</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">Before</div>
-            <div style="font-size:18px; font-weight:900; color:#333;">5,497<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-          <div style="font-size:18px; color:#2563EB; font-weight:900;">&rarr;</div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">After</div>
-            <div style="font-size:18px; font-weight:900; color:#1D4ED8;">7,723<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; background:#DBEAFE; border-radius:6px; padding:4px;">
-          <span style="font-size:11px; font-weight:800; color:#1D4ED8;">월 +2,052만원</span>
-          <span style="font-size:10px; color:#3B82F6; margin-left:6px;">166개소 | 비급여 +54.8%</span>
-        </div>
-      </div>
-
-      <!-- STEP 1→2 -->
-      <div style="background:#F0FDF4; border:2px solid #BBF7D0; border-radius:12px; padding:14px 16px; margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:12px; font-weight:800; color:#065F46;">1 &rarr; 2 &mdash; 2번째 서비스 추가</div>
-          <div style="background:#059669; color:#fff; font-size:14px; font-weight:900; padding:3px 12px; border-radius:7px;">+24.6%</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">Before</div>
-            <div style="font-size:18px; font-weight:900; color:#333;">6,296<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-          <div style="font-size:18px; color:#059669; font-weight:900;">&rarr;</div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">After</div>
-            <div style="font-size:18px; font-weight:900; color:#065F46;">7,981<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; background:#D1FAE5; border-radius:6px; padding:4px;">
-          <span style="font-size:11px; font-weight:800; color:#065F46;">월 +1,330만원</span>
-          <span style="font-size:10px; color:#059669; margin-left:6px;">187개소 | 비급여 +37.4%</span>
-        </div>
-      </div>
-
-      <!-- STEP 2→3 -->
-      <div style="background:#FFF7ED; border:2px solid #FED7AA; border-radius:12px; padding:14px 16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:12px; font-weight:800; color:#92400E;">2 &rarr; 3 &mdash; 풀세트 전환</div>
-          <div style="background:#D97706; color:#fff; font-size:14px; font-weight:900; padding:3px 12px; border-radius:7px;">+16.7%</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">Before</div>
-            <div style="font-size:18px; font-weight:900; color:#333;">7,386<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-          <div style="font-size:18px; color:#D97706; font-weight:900;">&rarr;</div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">After</div>
-            <div style="font-size:18px; font-weight:900; color:#92400E;">8,913<span style="font-size:10px; color:#999;">만</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; background:#FEF3C7; border-radius:6px; padding:4px;">
-          <span style="font-size:11px; font-weight:800; color:#92400E;">월 +1,307만원</span>
-          <span style="font-size:10px; color:#B45309; margin-left:6px;">141개소 | 비급여 +33.1%</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT: 누적 효과 + 절대금액 + 비급여 -->
-    <div style="flex:1;">
-      <div style="font-size:13px; font-weight:800; color:#111; margin-bottom:14px;">0 &rarr; 3 누적 효과 &amp; 비급여 매출</div>
-
-      <!-- 0→3 누적 Hero -->
-      <div style="background:#111; border-radius:12px; padding:18px 20px; margin-bottom:12px;">
-        <div style="font-size:11px; font-weight:700; color:rgba(255,255,255,0.5); margin-bottom:10px;">서비스 0개 &rarr; 3개 풀세트 (n=101, p&lt;0.001)</div>
-        <div style="display:flex; align-items:center; gap:12px;">
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:rgba(255,255,255,0.4);">Before 월매출</div>
-            <div style="font-size:22px; font-weight:900; color:#fff;">5,650<span style="font-size:11px; color:rgba(255,255,255,0.5);">만</span></div>
-          </div>
-          <div style="font-size:22px; color:#60A5FA; font-weight:900;">&rarr;</div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:rgba(255,255,255,0.4);">After 월매출</div>
-            <div style="font-size:22px; font-weight:900; color:#34D399;">8,887<span style="font-size:11px; color:rgba(255,255,255,0.5);">만</span></div>
-          </div>
-          <div style="background:#2563EB; border-radius:10px; padding:8px 14px; text-align:center;">
-            <div style="font-size:9px; color:rgba(255,255,255,0.7);">총매출</div>
-            <div style="font-size:20px; font-weight:900; color:#fff;">+30%</div>
-          </div>
-        </div>
-        <div style="margin-top:10px; display:flex; gap:8px;">
-          <div style="flex:1; background:rgba(255,255,255,0.08); border-radius:8px; padding:8px; text-align:center;">
-            <div style="font-size:9px; color:rgba(255,255,255,0.4);">월 증가액</div>
-            <div style="font-size:18px; font-weight:900; color:#60A5FA;">+2,732<span style="font-size:10px; color:rgba(255,255,255,0.5);">만/월</span></div>
-          </div>
-          <div style="flex:1; background:rgba(52,211,153,0.15); border-radius:8px; padding:8px; text-align:center;">
-            <div style="font-size:9px; color:rgba(255,255,255,0.4);">비급여 증가</div>
-            <div style="font-size:18px; font-weight:900; color:#34D399;">+51~60<span style="font-size:10px; color:rgba(255,255,255,0.5);">%</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 비급여 강화 메커니즘 -->
-      <div style="font-size:11px; font-weight:800; color:#111; margin-bottom:8px;">왜 비급여가 더 강하게 성장하는가</div>
-
-      <div style="display:flex; gap:6px; margin-bottom:10px;">
-        <div style="flex:1; background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:8px 10px; text-align:center;">
-          <div style="font-size:18px; font-weight:900; color:#059669; margin-bottom:2px;">+85.2%</div>
-          <div style="font-size:10px; font-weight:800; color:#065F46;">린다이어트</div>
-          <div style="font-size:8px; color:#666; margin-top:2px;">비급여 다이어트 프로그램<br>매출원 신규 추가</div>
-        </div>
-        <div style="flex:1; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:8px; padding:8px 10px; text-align:center;">
-          <div style="font-size:18px; font-weight:900; color:#2563EB; margin-bottom:2px;">+53.3%</div>
-          <div style="font-size:10px; font-weight:800; color:#1D4ED8;">수멤버스</div>
-          <div style="font-size:8px; color:#666; margin-top:2px;">환자 CRM &middot; 재방문율<br>비급여 빈도 증가</div>
-        </div>
-        <div style="flex:1; background:#FFF7ED; border:1px solid #FED7AA; border-radius:8px; padding:8px 10px; text-align:center;">
-          <div style="font-size:18px; font-weight:900; color:#D97706; margin-bottom:2px;">+28.9%</div>
-          <div style="font-size:10px; font-weight:800; color:#92400E;">아큐렉스</div>
-          <div style="font-size:8px; color:#666; margin-top:2px;">비급여 약침 프로토콜<br>10개월 만에 효과 확인</div>
-        </div>
-      </div>
-
-      <!-- Insight -->
-      <div style="background:#F7F8FA; border-radius:8px; padding:10px 14px;">
-        <div style="font-size:10px; font-weight:500; color:#666; line-height:1.6;">
-          급여(건강보험) 수가는 고정 &rarr; 플랫폼 영향 제한적<br>
-          <strong style="color:#111;">비급여는 한의원이 가격+메뉴를 직접 설계</strong> &rarr; 플랫폼 기여분이 비급여에 집중<br>
-          <span style="color:#059669; font-weight:700;">"플랫폼이 한의원의 수익성 구조 자체를 개선한다"</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">&copy;INTEGRATION CORP. All Rights Reserved.</div>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">데이터를 불러오는 중...</div>
 </div>
 
-
-<!-- ================================ -->
-<!-- SLIDE 2: SERVICE PATH ANALYSIS   -->
-<!-- ================================ -->
-<div class="slide-label">2 &mdash; 어떤 서비스를 추가하느냐에 따라 효과가 다르다</div>
-<div class="slide" id="slide-2">
-  <div class="section-tag">CROSS-SELL IMPACT</div>
-
-  <div style="position:absolute; top:68px; left:48px; right:48px;">
-    <h1 style="font-size:30px; font-weight:900; color:#111; line-height:1.25; margin-bottom:4px;">
-      SERVICE PATH ANALYSIS
-    </h1>
-    <div style="font-size:14px; font-weight:400; color:#777;">
-      어떤 서비스를 추가하느냐에 따라 효과가 다르다 &mdash; 동일 한의원 Before/After, 서비스 추가 경로별 매출 변화율(중앙값)
+<div class="header">
+  <h1>Wedding Day</h1>
+  <p>공주들의 소중한 날을 함께 기억해요</p>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-num" id="totalCount">0</div>
+      <div class="stat-label">등록된 커플</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="thisMonthCount">0</div>
+      <div class="stat-label">이번 달 결혼</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num" id="upcomingCount">0</div>
+      <div class="stat-label">7일 이내</div>
     </div>
   </div>
-
-  <!-- 3 Columns: 0→1 / 1→2 / 2→3 -->
-  <div style="position:absolute; top:132px; left:48px; right:48px; bottom:50px; display:flex; gap:14px;">
-
-    <!-- COL 1: 0→1 첫 서비스 -->
-    <div style="flex:1; display:flex; flex-direction:column;">
-      <div style="background:#111; border-radius:10px 10px 0 0; padding:12px 16px; text-align:center;">
-        <div style="font-size:10px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:1px;">0 &rarr; 1</div>
-        <div style="font-size:16px; font-weight:900; color:#fff;">첫 서비스 도입</div>
-      </div>
-
-      <!-- 수멤버스 -->
-      <div style="background:#F7F8FA; border-left:1px solid #E8E8E8; border-right:1px solid #E8E8E8; padding:14px 14px 10px; flex:1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">수멤버스</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=139</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:22px; font-weight:900; color:#1D4ED8;">+35.0<span style="font-size:11px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:22px; font-weight:900; color:#065F46;">+53.3<span style="font-size:11px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#999;">p&lt;0.001 &middot; 85% 상승</div>
-      </div>
-
-      <!-- 린다이어트 -->
-      <div style="background:#fff; border:1px solid #E8E8E8; border-top:none; padding:14px 14px 10px; flex:1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">린다이어트</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=21</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:22px; font-weight:900; color:#1D4ED8;">+50.7<span style="font-size:11px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:22px; font-weight:900; color:#065F46;">+85.2<span style="font-size:11px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#999;">p&lt;0.001 &middot; 86% 상승</div>
-      </div>
-
-      <!-- 전체 -->
-      <div style="background:#111; border-radius:0 0 10px 10px; padding:10px 14px; text-align:center;">
-        <div style="font-size:9px; color:rgba(255,255,255,0.5);">전체 (n=166)</div>
-        <div style="display:flex; justify-content:center; gap:16px; margin-top:4px;">
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">매출</span> <span style="font-size:14px; font-weight:900; color:#fff;">+35.3%</span></div>
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">비급여</span> <span style="font-size:14px; font-weight:900; color:#34D399;">+54.8%</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COL 2: 1→2 -->
-    <div style="flex:1.15; display:flex; flex-direction:column;">
-      <div style="background:#111; border-radius:10px 10px 0 0; padding:12px 16px; text-align:center;">
-        <div style="font-size:10px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:1px;">1 &rarr; 2</div>
-        <div style="font-size:16px; font-weight:900; color:#fff;">2번째 서비스 추가</div>
-      </div>
-
-      <!-- 수→린 (Best Path) -->
-      <div style="background:#F0FDF4; border:2px solid #059669; border-top:none; padding:12px 14px 10px; flex:1; position:relative;">
-        <div style="position:absolute; top:6px; right:8px; background:#059669; color:#fff; font-size:8px; font-weight:800; padding:2px 8px; border-radius:4px; letter-spacing:0.5px;">BEST PATH</div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">수 &rarr; 린</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=95</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:6px;">
-          <div style="flex:1; background:#fff; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:20px; font-weight:900; color:#1D4ED8;">+29.2<span style="font-size:10px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#D1FAE5; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:20px; font-weight:900; color:#065F46;">+48.5<span style="font-size:10px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#065F46; font-weight:600;">표본+효과 균형 최적</div>
-      </div>
-
-      <!-- 수→아큐 -->
-      <div style="background:#F7F8FA; border:1px solid #E8E8E8; border-top:none; padding:12px 14px 10px; flex:0.85;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">수 &rarr; 아큐렉스</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=68</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:6px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:6px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:18px; font-weight:900; color:#1D4ED8;">+13.1<span style="font-size:10px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:6px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:18px; font-weight:900; color:#065F46;">+17.0<span style="font-size:10px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#999;">p&lt;0.001 &middot; After &le;10개월</div>
-      </div>
-
-      <!-- 린→수 -->
-      <div style="background:#fff; border:1px solid #E8E8E8; border-top:none; padding:12px 14px 10px; flex:0.85;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">린 &rarr; 수</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=20</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:6px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:6px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:18px; font-weight:900; color:#1D4ED8;">+34.9<span style="font-size:10px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:6px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:18px; font-weight:900; color:#065F46;">+65.5<span style="font-size:10px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#999;">p&lt;0.001</div>
-      </div>
-
-      <!-- 전체 -->
-      <div style="background:#111; border-radius:0 0 10px 10px; padding:10px 14px; text-align:center;">
-        <div style="font-size:9px; color:rgba(255,255,255,0.5);">전체 (n=187)</div>
-        <div style="display:flex; justify-content:center; gap:16px; margin-top:4px;">
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">매출</span> <span style="font-size:14px; font-weight:900; color:#fff;">+24.6%</span></div>
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">비급여</span> <span style="font-size:14px; font-weight:900; color:#34D399;">+37.4%</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COL 3: 2→3 -->
-    <div style="flex:1; display:flex; flex-direction:column;">
-      <div style="background:#111; border-radius:10px 10px 0 0; padding:12px 16px; text-align:center;">
-        <div style="font-size:10px; font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:1px;">2 &rarr; 3</div>
-        <div style="font-size:16px; font-weight:900; color:#fff;">풀세트 전환</div>
-      </div>
-
-      <!-- +아큐렉스 -->
-      <div style="background:#F7F8FA; border:1px solid #E8E8E8; border-top:none; padding:14px 14px 10px; flex:1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">+ 아큐렉스</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=129</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:22px; font-weight:900; color:#1D4ED8;">+16.4<span style="font-size:11px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:22px; font-weight:900; color:#065F46;">+28.9<span style="font-size:11px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#999;">p&lt;0.001 &middot; 78% 상승</div>
-      </div>
-
-      <!-- +린다이어트 -->
-      <div style="background:#fff; border:1px solid #E8E8E8; border-top:none; padding:14px 14px 10px; flex:1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-          <div style="font-size:13px; font-weight:800; color:#111;">+ 린다이어트</div>
-          <div style="font-size:11px; font-weight:600; color:#999;">n=10</div>
-        </div>
-        <div style="display:flex; gap:6px; margin-bottom:8px;">
-          <div style="flex:1; background:#EFF6FF; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#3B82F6;">총매출</div>
-            <div style="font-size:22px; font-weight:900; color:#1D4ED8;">+31.9<span style="font-size:11px;">%</span></div>
-          </div>
-          <div style="flex:1; background:#F0FDF4; border-radius:8px; padding:8px 6px; text-align:center;">
-            <div style="font-size:9px; font-weight:600; color:#059669;">비급여</div>
-            <div style="font-size:22px; font-weight:900; color:#065F46;">+72.7<span style="font-size:11px;">%</span></div>
-          </div>
-        </div>
-        <div style="text-align:center; font-size:9px; color:#F59E0B; font-weight:600;">p=0.065 &middot; 소규모 표본</div>
-      </div>
-
-      <!-- 아큐렉스 참고 -->
-      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-top:none; padding:10px 14px; flex:0.6;">
-        <div style="font-size:9px; font-weight:800; color:#1D4ED8; margin-bottom:4px;">아큐렉스 &mdash; 런칭 10개월 만에 효과 확인</div>
-        <div style="font-size:9px; color:#666; line-height:1.5;">
-          2025.05 런칭 &rarr; 이미 +16.4% / +28.9%<br>
-          장기화 시 추가 상승 기대
-        </div>
-      </div>
-
-      <!-- 전체 -->
-      <div style="background:#111; border-radius:0 0 10px 10px; padding:10px 14px; text-align:center;">
-        <div style="font-size:9px; color:rgba(255,255,255,0.5);">전체 (n=141)</div>
-        <div style="display:flex; justify-content:center; gap:16px; margin-top:4px;">
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">매출</span> <span style="font-size:14px; font-weight:900; color:#fff;">+16.7%</span></div>
-          <div><span style="font-size:9px; color:rgba(255,255,255,0.4);">비급여</span> <span style="font-size:14px; font-weight:900; color:#34D399;">+33.1%</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="footer">&copy;INTEGRATION CORP. All Rights Reserved.</div>
 </div>
 
-
-<!-- ================================ -->
-<!-- SLIDE 3: 재현 가능한 성장 엔진    -->
-<!-- ================================ -->
-<div class="slide-label">3 &mdash; 재현 가능한 성장 엔진</div>
-<div class="slide" id="slide-3">
-  <div class="section-tag">CROSS-SELL IMPACT</div>
-
-  <div style="position:absolute; top:68px; left:48px; right:48px;">
-    <h1 style="font-size:30px; font-weight:900; color:#111; line-height:1.25; margin-bottom:4px;">
-      77~85%의 한의원에서 효과 발현 &mdash; 재현 가능한 성장 엔진
-    </h1>
-    <div style="font-size:14px; font-weight:400; color:#777;">
-      특정 한의원이 아닌 대다수에서 일관된 상승 &middot; 소규모 한의원일수록 효과 극대화 &middot; 단기에서도 즉시 효과
-    </div>
-  </div>
-
-  <!-- Two Columns -->
-  <div style="position:absolute; top:138px; left:48px; right:48px; bottom:100px; display:flex; gap:20px;">
-
-    <!-- LEFT: 재현성 증거 -->
-    <div style="flex:1;">
-      <div style="font-size:13px; font-weight:800; color:#111; margin-bottom:14px;">효과 재현성 &mdash; 단계별 상승 비율</div>
-
-      <!-- 상승 비율 바 -->
-      <div style="margin-bottom:16px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div style="width:56px; text-align:right; font-size:11px; font-weight:700; color:#333;">0 &rarr; 1</div>
-          <div style="flex:1; height:32px; background:#F0F0F0; border-radius:6px; position:relative;">
-            <div style="height:100%; width:85%; background:linear-gradient(90deg,#059669,#34D399); border-radius:6px; display:flex; align-items:center; padding-left:10px;">
-              <span style="font-size:12px; font-weight:900; color:#fff;">85%</span>
-            </div>
-            <div style="position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:9px; color:#DC2626; font-weight:600;">15%</div>
-          </div>
-          <div style="width:48px; font-size:11px; font-weight:600; color:#999; text-align:right;">n=166</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-          <div style="width:56px; text-align:right; font-size:11px; font-weight:700; color:#333;">1 &rarr; 2</div>
-          <div style="flex:1; height:32px; background:#F0F0F0; border-radius:6px; position:relative;">
-            <div style="height:100%; width:80%; background:linear-gradient(90deg,#2563EB,#60A5FA); border-radius:6px; display:flex; align-items:center; padding-left:10px;">
-              <span style="font-size:12px; font-weight:900; color:#fff;">80%</span>
-            </div>
-            <div style="position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:9px; color:#DC2626; font-weight:600;">20%</div>
-          </div>
-          <div style="width:48px; font-size:11px; font-weight:600; color:#999; text-align:right;">n=187</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <div style="width:56px; text-align:right; font-size:11px; font-weight:700; color:#333;">2 &rarr; 3</div>
-          <div style="flex:1; height:32px; background:#F0F0F0; border-radius:6px; position:relative;">
-            <div style="height:100%; width:77%; background:linear-gradient(90deg,#D97706,#FCD34D); border-radius:6px; display:flex; align-items:center; padding-left:10px;">
-              <span style="font-size:12px; font-weight:900; color:#fff;">77%</span>
-            </div>
-            <div style="position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:9px; color:#DC2626; font-weight:600;">23%</div>
-          </div>
-          <div style="width:48px; font-size:11px; font-weight:600; color:#999; text-align:right;">n=141</div>
-        </div>
-      </div>
-
-      <!-- 절대금액 계단 -->
-      <div style="font-size:11px; font-weight:800; color:#111; margin-bottom:8px;">서비스 수별 월매출 (중앙값)</div>
-
-      <div style="display:flex; align-items:flex-end; gap:4px; margin-bottom:10px; height:110px; padding:0 8px;">
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
-          <div style="font-size:11px; font-weight:900; color:#999; margin-bottom:4px;">5,650<span style="font-size:8px;">만</span></div>
-          <div style="width:100%; height:54px; background:#D1D5DB; border-radius:6px 6px 0 0;"></div>
-          <div style="font-size:9px; font-weight:700; color:#666; margin-top:4px;">0개</div>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
-          <div style="font-size:11px; font-weight:900; color:#2563EB; margin-bottom:4px;">7,723<span style="font-size:8px;">만</span></div>
-          <div style="width:100%; height:74px; background:linear-gradient(180deg,#60A5FA,#2563EB); border-radius:6px 6px 0 0;"></div>
-          <div style="font-size:9px; font-weight:700; color:#666; margin-top:4px;">1개</div>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
-          <div style="font-size:11px; font-weight:900; color:#059669; margin-bottom:4px;">7,981<span style="font-size:8px;">만</span></div>
-          <div style="width:100%; height:82px; background:linear-gradient(180deg,#34D399,#059669); border-radius:6px 6px 0 0;"></div>
-          <div style="font-size:9px; font-weight:700; color:#666; margin-top:4px;">2개</div>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;">
-          <div style="font-size:12px; font-weight:900; color:#111; margin-bottom:4px;">8,887<span style="font-size:8px;">만</span></div>
-          <div style="width:100%; height:96px; background:linear-gradient(180deg,#374151,#111); border-radius:6px 6px 0 0;"></div>
-          <div style="font-size:9px; font-weight:900; color:#111; margin-top:4px;">3개(풀셋)</div>
-        </div>
-      </div>
-
-      <!-- 수익성 개선 -->
-      <div style="font-size:11px; font-weight:800; color:#111; margin-bottom:6px;">매출뿐 아니라 수익성 구조도 개선</div>
-      <div style="background:#F7F8FA; border-radius:10px; padding:10px 14px;">
-        <div style="font-size:10px; font-weight:600; color:#999; margin-bottom:6px;">비급여 비율 (비급여/총매출) &mdash; 서비스 추가 전후</div>
-        <div style="display:flex; gap:6px;">
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">0&rarr;1</div>
-            <div style="font-size:13px; font-weight:900; color:#059669;">27.2 &rarr; 29.3%</div>
-            <div style="font-size:9px; font-weight:700; color:#059669;">+2.6%p</div>
-          </div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">1&rarr;2</div>
-            <div style="font-size:13px; font-weight:900; color:#059669;">26.3 &rarr; 29.8%</div>
-            <div style="font-size:9px; font-weight:700; color:#059669;">+2.5%p</div>
-          </div>
-          <div style="flex:1; text-align:center;">
-            <div style="font-size:9px; color:#999;">2&rarr;3</div>
-            <div style="font-size:13px; font-weight:900; color:#059669;">26.8 &rarr; 31.0%</div>
-            <div style="font-size:9px; font-weight:700; color:#059669;">+2.7%p</div>
-          </div>
-        </div>
-        <div style="margin-top:6px; font-size:9px; color:#666; text-align:center;">전 단계 p&lt;0.001 &middot; 비급여 = 한의원이 직접 가격 설정 &rarr; <strong style="color:#111;">수익성 구조 개선</strong></div>
-      </div>
-    </div>
-
-    <!-- RIGHT: 편향 반박 + 보수적 검증 -->
-    <div style="flex:1;">
-      <div style="font-size:13px; font-weight:800; color:#111; margin-bottom:14px;">자기선택 편향 반박 &mdash; "원래 잘 되는 한의원이 서비스를 쓰는 거 아닌가?"</div>
-
-      <!-- 반박 1 -->
-      <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:12px 14px; margin-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="width:22px; height:22px; border-radius:50%; background:#059669; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; flex-shrink:0;">1</div>
-          <div style="font-size:12px; font-weight:800; color:#065F46;">작은 한의원일수록 효과가 크다</div>
-        </div>
-        <div style="font-size:11px; color:#333; line-height:1.5; padding-left:30px;">
-          r = -0.28 (p&lt;0.001) &mdash; "이미 잘 되는 한의원"이라면 양(+)의 상관이어야 하나, 실제는 <strong>음(-)의 상관</strong>
-        </div>
-      </div>
-
-      <!-- 반박 2 -->
-      <div style="background:#EFF6FF; border:1px solid #BFDBFE; border-radius:10px; padding:12px 14px; margin-bottom:8px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="width:22px; height:22px; border-radius:50%; background:#2563EB; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; flex-shrink:0;">2</div>
-          <div style="font-size:12px; font-weight:800; color:#1D4ED8;">단기 3개월에서도 즉시 효과</div>
-        </div>
-        <div style="font-size:11px; color:#333; line-height:1.5; padding-left:30px;">
-          ±3개월 고정 윈도우: 0&rarr;1 <strong>+9.2%</strong> (p&lt;0.001)<br>
-          자연 성장만으로는 3개월 내 +9% 설명 불가
-        </div>
-      </div>
-
-      <!-- 반박 3 -->
-      <div style="background:#FFF7ED; border:1px solid #FED7AA; border-radius:10px; padding:12px 14px; margin-bottom:12px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
-          <div style="width:22px; height:22px; border-radius:50%; background:#D97706; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:900; color:#fff; flex-shrink:0;">3</div>
-          <div style="font-size:12px; font-weight:800; color:#92400E;">77~85%에서 일관된 재현</div>
-        </div>
-        <div style="font-size:11px; color:#333; line-height:1.5; padding-left:30px;">
-          특정 한의원이 아닌 <strong>대다수</strong>에서 동일한 상승 패턴 &rarr; 플랫폼 구조적 효과
-        </div>
-      </div>
-
-      <!-- 보수적 수치 테이블 -->
-      <div style="font-size:11px; font-weight:800; color:#111; margin-bottom:8px;">보수적 검증 (고정 윈도우, 계절성 보정 후)</div>
-      <table style="width:100%; border-collapse:collapse; font-size:10px;">
-        <thead>
-          <tr style="border-bottom:2px solid #111;">
-            <th style="text-align:left; padding:4px 6px; font-weight:800; color:#999; font-size:9px;">전환</th>
-            <th style="text-align:center; padding:4px 6px; font-weight:800; color:#999; font-size:9px;">±3개월</th>
-            <th style="text-align:center; padding:4px 6px; font-weight:800; color:#999; font-size:9px;">±6개월</th>
-            <th style="text-align:center; padding:4px 6px; font-weight:800; color:#999; font-size:9px;">±12개월</th>
-            <th style="text-align:center; padding:4px 6px; font-weight:800; color:#2563EB; font-size:9px;">보정 후</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="border-bottom:1px solid #E8E8E8;">
-            <td style="padding:5px 6px; font-weight:700;">0 &rarr; 1</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+9.2%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+8.8%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+14.8%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#2563EB;">+5.9%</td>
-          </tr>
-          <tr style="border-bottom:1px solid #E8E8E8;">
-            <td style="padding:5px 6px; font-weight:700;">1 &rarr; 2</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+5.8%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+13.4%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+5.9%**</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#2563EB;">+10.2%</td>
-          </tr>
-          <tr>
-            <td style="padding:5px 6px; font-weight:700;">2 &rarr; 3</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+3.4%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+10.3%***</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#059669;">+5.9%*</td>
-            <td style="padding:5px 6px; text-align:center; font-weight:700; color:#2563EB;">+5.5%</td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:6px; font-size:9px; color:#999;">*** p&lt;0.001 &middot; ** p&lt;0.01 &middot; * p&lt;0.05 &mdash; 모든 구간 통계적 유의</div>
-    </div>
-  </div>
-
-  <!-- Bottom bar -->
-  <div style="position:absolute; bottom:44px; left:48px; right:48px; background:#111; border-radius:10px; padding:14px 28px; display:flex; align-items:center; justify-content:center; gap:32px;">
-    <div style="text-align:center;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">분석 대상</div>
-      <div style="font-size:20px; font-weight:900; color:#fff;">322<span style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.6);"> 한의원</span></div>
-    </div>
-    <div style="font-size:18px; color:#60A5FA;">&middot;</div>
-    <div style="text-align:center;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">검증 방법</div>
-      <div style="font-size:14px; font-weight:900; color:#fff;">Wilcoxon signed-rank</div>
-    </div>
-    <div style="font-size:18px; color:#60A5FA;">&middot;</div>
-    <div style="text-align:center;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">풀세트 월 매출 증가</div>
-      <div style="font-size:20px; font-weight:900; color:#60A5FA;">+2,732<span style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.6);">만원/월</span></div>
-    </div>
-    <div style="font-size:18px; color:#60A5FA;">&middot;</div>
-    <div style="text-align:center;">
-      <div style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5); margin-bottom:2px;">비급여 누적</div>
-      <div style="font-size:20px; font-weight:900; color:#34D399;">+51~60<span style="font-size:11px; font-weight:600; color:rgba(255,255,255,0.6);">%</span></div>
-    </div>
-  </div>
-
-  <div class="footer">&copy;INTEGRATION CORP. All Rights Reserved.</div>
+<div class="sync-bar" id="syncBar" onclick="loadFromSheet()">
+  마지막 동기화: -
 </div>
 
+<div class="container">
+
+  <!-- Setup Banner (Apps Script URL 미설정 시 표시) -->
+  <div class="setup-banner" id="setupBanner" style="display:none;">
+    <strong>Google Sheets 연동 설정이 필요합니다.</strong><br>
+    아래 코드의 <code>SCRIPT_URL</code>에 Apps Script 웹앱 URL을 입력해주세요.<br>
+    현재는 <strong>오프라인 모드</strong>(localStorage)로 작동 중입니다.
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="register">등록하기</button>
+    <button class="tab" data-tab="list">전체목록</button>
+    <button class="tab" data-tab="calendar">캘린더</button>
+    <button class="tab" data-tab="tips">꿀팁</button>
+    <button class="tab" data-tab="buddy">짝꿍코드</button>
+  </div>
+
+  <!-- Register Tab -->
+  <div class="section-panel active" id="panel-register">
+    <div class="form-card">
+      <h2>결혼일 등록</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>이름</label>
+          <input type="text" id="inputName" placeholder="예: 홍길동">
+        </div>
+        <div class="form-group">
+          <label>결혼일</label>
+          <input type="date" id="inputDate">
+        </div>
+        <div class="form-group">
+          <label>결혼식 시간 (선택)</label>
+          <input type="time" id="inputTime" step="3600">
+        </div>
+        <div class="form-group">
+          <label>배우자 이름 (선택)</label>
+          <input type="text" id="inputSpouse" placeholder="예: 김영희">
+        </div>
+        <div class="form-group">
+          <label>연락처 (선택)</label>
+          <input type="text" id="inputContact" placeholder="예: 010-1234-5678">
+        </div>
+        <div class="form-group full">
+          <label>장소 (선택)</label>
+          <input type="text" id="inputMemo" placeholder="예: 더채플앳청담">
+        </div>
+        <button class="btn-submit" id="btnSubmit" onclick="addEntry()">등록하기</button>
+      </div>
+    </div>
+    <div id="upcomingSection"></div>
+  </div>
+
+  <!-- Calendar Tab -->
+  <div class="section-panel" id="panel-calendar">
+    <div class="calendar-card">
+      <div class="cal-nav">
+        <button onclick="changeMonth(-1)">&#8249;</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+
+  <!-- Tips Tab -->
+  <div class="section-panel" id="panel-tips">
+    <input type="text" class="tips-search" id="tipsSearch" placeholder="키워드로 검색... (예: 드레스, 견적, 종로)" oninput="filterTips()">
+    <div class="tips-chips" id="tipsChips"></div>
+    <div class="accordion-group" id="tipsAccordion"></div>
+  </div>
+
+  <!-- Buddy Code Tab -->
+  <div class="section-panel" id="panel-buddy">
+    <div class="buddy-form">
+      <h2>짝꿍코드 등록</h2>
+      <div class="buddy-grid">
+        <div class="form-group">
+          <label>업체명 *</label>
+          <input type="text" id="buddyVendor" placeholder="예: 하이필름">
+        </div>
+        <div class="form-group">
+          <label>카테고리</label>
+          <select id="buddyCategory" style="padding:var(--spacing-lg) var(--spacing-xl);border:1px solid var(--border-primary);border-radius:var(--rounded-md);font-size:0.875rem;background:var(--bg-primary);color:var(--text-primary);">
+            <option value="스냅">스냅</option>
+            <option value="DVD/영상">DVD/영상</option>
+            <option value="드레스">드레스</option>
+            <option value="메이크업">메이크업</option>
+            <option value="스튜디오">스튜디오</option>
+            <option value="반지/예물">반지/예물</option>
+            <option value="사회자">사회자</option>
+            <option value="허니문">허니문</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>코드 *</label>
+          <input type="text" id="buddyCode" placeholder="예: 270501권다영">
+        </div>
+        <div class="form-group full">
+          <label>혜택 내용 *</label>
+          <input type="text" id="buddyBenefit" placeholder="예: 할인 50,000원 / 원가 750,000원">
+        </div>
+        <div class="form-group">
+          <label>코드 마감일 (선택)</label>
+          <input type="date" id="buddyExpiry">
+        </div>
+        <button class="btn-submit" id="btnBuddySubmit" onclick="addBuddyCode()">등록하기</button>
+      </div>
+    </div>
+    <input type="text" class="tips-search" id="buddySearch" placeholder="업체명, 코드, 혜택으로 검색..." oninput="renderBuddyList()">
+    <div class="tips-chips" id="buddyChips"></div>
+    <div class="accordion-group" id="buddyAccordion"></div>
+  </div>
+
+  <!-- List Tab -->
+  <div class="section-panel" id="panel-list">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="이름으로 검색..." oninput="renderList()">
+      <select id="sortSelect" onchange="renderList()">
+        <option value="date">날짜순</option>
+        <option value="name">이름순</option>
+        <option value="upcoming">다가오는순</option>
+      </select>
+    </div>
+    <div class="entry-list" id="entryList"></div>
+  </div>
+</div>
+
+<!-- Day Popup -->
+<div class="day-popup" id="dayPopup" onclick="if(event.target===this)closeDayPopup()">
+  <div class="day-popup-content">
+    <button class="day-popup-close" onclick="closeDayPopup()">&times;</button>
+    <h3 id="dayPopupTitle"></h3>
+    <div id="dayPopupList"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-content">
+    <h3>수정하기</h3>
+    <div class="form-group">
+      <label>이름</label>
+      <input type="text" id="editName">
+    </div>
+    <div class="form-group">
+      <label>결혼일</label>
+      <input type="date" id="editDate">
+    </div>
+    <div class="form-group">
+      <label>결혼식 시간</label>
+      <input type="time" id="editTime" step="3600">
+    </div>
+    <div class="form-group">
+      <label>배우자 이름</label>
+      <input type="text" id="editSpouse">
+    </div>
+    <div class="form-group">
+      <label>연락처</label>
+      <input type="text" id="editContact">
+    </div>
+    <div class="form-group">
+      <label>장소</label>
+      <input type="text" id="editMemo">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEditModal()">취소</button>
+      <button class="btn-save" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attend Modal -->
+<div class="attend-modal" id="attendModal" onclick="if(event.target===this)closeAttendModal()">
+  <div class="attend-modal-content">
+    <h3 id="attendModalTitle">참여하기</h3>
+    <input type="text" id="attendNickname" placeholder="닉네임을 입력하세요" maxlength="20">
+    <div class="attend-modal-btns">
+      <button class="btn-cancel" onclick="closeAttendModal()">취소</button>
+      <button class="btn-save" onclick="submitAttend()">참여</button>
+    </div>
+    <div id="attendeesList" style="margin-top:var(--spacing-xl);text-align:left;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================
+  //  Google Sheets 연동 설정
+  // ============================================
+  //  아래 URL을 Apps Script 배포 URL로 교체하세요.
+  //  비어있으면 오프라인 모드(localStorage)로 동작합니다.
+  // ============================================
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMGOfPjO_LjgFXbDeor-k_GsQC3AKhc7LR8-0JVttxkJJQRp34uumnkTj6Ub_Kynbm/exec';
+  // ============================================
+
+  const isOnline = () => SCRIPT_URL.length > 0;
+  const STORAGE_KEY = 'wedding_calendar_entries';
+
+  let entries = [];
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+  let editingId = null;
+
+  // ===== API Helper =====
+  async function apiCall(params) {
+    const url = new URL(SCRIPT_URL);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.append(k, v));
+    const res = await fetch(url.toString());
+    if (!res.ok) throw new Error('Network error');
+    return res.json();
+  }
+
+  // ===== Load / Save =====
+  function loadLocal() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveLocal(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  async function loadFromSheet() {
+    if (!isOnline()) {
+      entries = loadLocal();
+      updateSyncBar('오프라인 모드 (localStorage)');
+      refreshAll();
+      return;
+    }
+
+    showLoading(true);
+    try {
+      const result = await apiCall({ action: 'read' });
+      if (result.success) {
+        entries = result.entries;
+        saveLocal(entries); // cache locally
+        updateSyncBar(`동기화 완료 (${new Date().toLocaleTimeString('ko')})`);
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error('Load error:', err);
+      entries = loadLocal();
+      updateSyncBar('동기화 실패 - 캐시 데이터 사용 중', true);
+    }
+    showLoading(false);
+    refreshAll();
+  }
+
+  function showLoading(show) {
+    document.getElementById('loadingOverlay').classList.toggle('show', show);
+  }
+
+  function updateSyncBar(text, isError) {
+    const bar = document.getElementById('syncBar');
+    bar.textContent = text + ' (클릭하여 새로고침)';
+    bar.classList.toggle('error', !!isError);
+  }
+
+  function refreshAll() {
+    updateStats();
+    renderUpcoming();
+    renderCalendar();
+    if (document.getElementById('panel-list').classList.contains('active')) {
+      renderList();
+    }
+  }
+
+  // ===== Toast =====
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ===== Tabs =====
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      if (tab.dataset.tab === 'calendar') renderCalendar();
+      if (tab.dataset.tab === 'list') renderList();
+      if (tab.dataset.tab === 'tips' && !tipsLoaded) loadTips();
+      if (tab.dataset.tab === 'buddy' && !buddyLoaded) loadBuddyCodes();
+    });
+  });
+
+  // ===== Add Entry =====
+  async function addEntry() {
+    const name = document.getElementById('inputName').value.trim();
+    const date = document.getElementById('inputDate').value;
+    const time = document.getElementById('inputTime').value;
+    const spouse = document.getElementById('inputSpouse').value.trim();
+    const contact = document.getElementById('inputContact').value.trim();
+    const memo = document.getElementById('inputMemo').value.trim();
+
+    if (!name) { showToast('이름을 입력해주세요'); return; }
+    if (!date) { showToast('결혼일을 선택해주세요'); return; }
+
+    const btn = document.getElementById('btnSubmit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'add', name, date, time, spouse, contact, memo });
+        if (result.success) {
+          entries.push(result.entry);
+          saveLocal(entries);
+        } else {
+          throw new Error(result.error);
+        }
+      } else {
+        const entry = {
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+          name, date, time, spouse, contact, memo,
+          createdAt: new Date().toISOString()
+        };
+        entries.push(entry);
+        saveLocal(entries);
+      }
+
+      // Clear form
+      document.getElementById('inputName').value = '';
+      document.getElementById('inputDate').value = '';
+      document.getElementById('inputTime').value = '';
+      document.getElementById('inputSpouse').value = '';
+      document.getElementById('inputContact').value = '';
+      document.getElementById('inputMemo').value = '';
+
+      showToast(`${name}님의 결혼일이 등록되었습니다!`);
+      refreshAll();
+    } catch (err) {
+      showToast('등록 실패: ' + err.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+  }
+
+  // ===== Stats =====
+  function updateStats() {
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+
+    document.getElementById('totalCount').textContent = entries.length;
+
+    const thisMonthEntries = entries.filter(e => {
+      const d = parseDate(e.date);
+      return d.getFullYear() === thisYear && d.getMonth() === thisMonth;
+    });
+    document.getElementById('thisMonthCount').textContent = thisMonthEntries.length;
+
+    const upcoming = entries.filter(e => {
+      const diff = getDaysUntil(e.date);
+      return diff >= 0 && diff <= 7;
+    });
+    document.getElementById('upcomingCount').textContent = upcoming.length;
+  }
+
+  // ===== Upcoming =====
+  function renderUpcoming() {
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const section = document.getElementById('upcomingSection');
+
+    const withDiff = entries.map(e => {
+      return { ...e, daysUntil: getDaysUntil(e.date) };
+    }).filter(e => e.daysUntil >= 0 && e.daysUntil <= 30)
+      .sort((a, b) => a.daysUntil - b.daysUntil);
+
+    if (withDiff.length === 0) { section.innerHTML = ''; return; }
+
+    section.innerHTML = `
+      <div class="upcoming-header">다가오는 결혼식</div>
+      <div class="entry-list">
+        ${withDiff.map(e => {
+          const d = parseDate(e.date);
+          const tag = e.daysUntil === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
+            : e.daysUntil <= 7 ? `<span class="upcoming-tag tag-soon">D-${e.daysUntil}</span>`
+            : `<span class="upcoming-tag tag-this-month">D-${e.daysUntil}</span>`;
+          const years = thisYear - d.getFullYear();
+          const yearText = years > 0 ? ` (${years}주년)` : '';
+          const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+          return `<div class="entry-card">
+            <div class="entry-date-badge">
+              <span class="month">${d.getMonth() + 1}월</span>
+              <span class="day">${d.getDate()}</span>
+            </div>
+            <div class="entry-info">
+              <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${tag}</div>
+              <div class="entry-detail">${formatDate(e.date)}${timeText}${yearText}</div>
+              ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ===== Calendar =====
+  function renderCalendar() {
+    document.getElementById('calTitle').textContent = `${currentYear}년 ${currentMonth + 1}월`;
+
+    const daysEl = document.getElementById('calDays');
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = new Date();
+
+    const eventMap = {};
+    entries.forEach(e => {
+      const d = parseDate(e.date);
+      if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+        const key = d.getDate();
+        if (!eventMap[key]) eventMap[key] = [];
+        eventMap[key].push(e);
+      }
+    });
+
+    let html = '';
+    for (let i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+    for (let day = 1; day <= lastDate; day++) {
+      const dow = (firstDay + day - 1) % 7;
+      const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+      const evts = eventMap[day] || [];
+      const classes = ['cal-day'];
+      if (isToday) classes.push('today');
+      if (evts.length > 0) classes.push('has-event');
+      if (dow === 0) classes.push('sunday');
+      if (dow === 6) classes.push('saturday');
+
+      const onclick = evts.length > 0 ? `onclick="showDayPopup(${currentYear},${currentMonth},${day})"` : '';
+      let dots = '';
+      if (evts.length > 0 && evts.length <= 3) {
+        dots = `<div class="dot-row">${evts.map(() => '<div class="dot"></div>').join('')}</div>`;
+      } else if (evts.length > 3) {
+        dots = `<div class="dot-row"><div class="dot"></div><div class="dot"></div><span class="dot-more">+${evts.length - 2}</span></div>`;
+      }
+
+      html += `<div class="${classes.join(' ')}" ${onclick}>${day}${dots}</div>`;
+    }
+
+    daysEl.innerHTML = html;
+    renderMonthGrid();
+  }
+
+  function renderMonthGrid() {
+    const grid = document.getElementById('monthGrid');
+    const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const counts = new Array(12).fill(0);
+    entries.forEach(e => {
+      const d = parseDate(e.date);
+      if (d.getFullYear() === currentYear) counts[d.getMonth()]++;
+    });
+
+    grid.innerHTML = months.map((m, i) =>
+      `<button class="month-btn ${i === currentMonth ? 'active' : ''}" onclick="goMonth(${i})">
+        ${m}${counts[i] > 0 ? `<span class="count">${counts[i]}명</span>` : ''}
+      </button>`
+    ).join('');
+  }
+
+  function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+
+  function goMonth(m) { currentMonth = m; renderCalendar(); }
+
+  // ===== Day Popup =====
+  function showDayPopup(year, month, day) {
+    const evts = entries.filter(e => {
+      const d = parseDate(e.date);
+      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+    });
+
+    document.getElementById('dayPopupTitle').textContent = `${year}년 ${month + 1}월 ${day}일 결혼식`;
+    document.getElementById('dayPopupList').innerHTML = evts.map(e => {
+      const d = parseDate(e.date);
+      const years = new Date().getFullYear() - d.getFullYear();
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+      return `<div class="entry-card" style="margin-bottom:8px">
+        <div class="entry-date-badge">
+          <span class="month">${d.getMonth() + 1}월</span>
+          <span class="day">${d.getDate()}</span>
+        </div>
+        <div class="entry-info">
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''}</div>
+          <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    document.getElementById('dayPopup').classList.add('show');
+  }
+
+  function closeDayPopup() { document.getElementById('dayPopup').classList.remove('show'); }
+
+  // ===== List =====
+  function renderList() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    const now = new Date();
+    const thisYear = now.getFullYear();
+
+    let filtered = entries.filter(e =>
+      e.name.toLowerCase().includes(query) ||
+      (e.spouse && e.spouse.toLowerCase().includes(query))
+    );
+
+    if (sort === 'date') {
+      filtered.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+    } else if (sort === 'name') {
+      filtered.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    } else {
+      filtered.sort((a, b) => {
+        const da = parseDate(a.date), db = parseDate(b.date);
+        let na = new Date(thisYear, da.getMonth(), da.getDate());
+        let nb = new Date(thisYear, db.getMonth(), db.getDate());
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (na < today) na.setFullYear(thisYear + 1);
+        if (nb < today) nb.setFullYear(thisYear + 1);
+        return na - nb;
+      });
+    }
+
+    const listEl = document.getElementById('entryList');
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">💍</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 결혼일이 없습니다'}</p></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(e => {
+      const d = parseDate(e.date);
+      const years = thisYear - d.getFullYear();
+      const timeText = parseTime(e.time) ? ` ${parseTime(e.time)}` : '';
+      const dday = getDaysUntil(e.date);
+      const ddayTag = dday === 0 ? '<span class="upcoming-tag tag-today">TODAY</span>'
+        : dday <= 7 ? `<span class="upcoming-tag tag-soon">D-${dday}</span>`
+        : dday <= 30 ? `<span class="upcoming-tag tag-this-month">D-${dday}</span>`
+        : `<span class="upcoming-tag" style="background:var(--gray-100);color:var(--gray-500);">D-${dday}</span>`;
+      const attendCount = getAttendees(e.id).length;
+      return `<div class="entry-card" style="flex-wrap:wrap;">
+        <div class="entry-date-badge">
+          <span class="month">${d.getMonth() + 1}월</span>
+          <span class="day">${d.getDate()}</span>
+        </div>
+        <div class="entry-info">
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${ddayTag}</div>
+          <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
+          ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
+          ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="btn-attend" onclick="openAttendModal('${e.id}')">
+            참여 <span class="attend-count">${attendCount}</span>
+          </button>
+          <button class="btn-icon" onclick="openEdit('${e.id}')" title="수정">&#9998;</button>
+          <button class="btn-icon delete" onclick="deleteEntry('${e.id}')" title="삭제">&#10005;</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ===== Edit =====
+  function openEdit(id) {
+    const e = entries.find(x => x.id === id);
+    if (!e) return;
+    editingId = id;
+    document.getElementById('editName').value = e.name || '';
+    // date input은 YYYY-MM-DD 형식 필요
+    const d = parseDate(e.date);
+    if (d && !isNaN(d)) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      document.getElementById('editDate').value = `${y}-${m}-${day}`;
+    } else {
+      document.getElementById('editDate').value = '';
+    }
+    // time input은 HH:MM 형식 필요
+    document.getElementById('editTime').value = parseTime(e.time) || '';
+    document.getElementById('editSpouse').value = e.spouse || '';
+    document.getElementById('editContact').value = e.contact || '';
+    document.getElementById('editMemo').value = e.memo || '';
+    document.getElementById('editModal').classList.add('show');
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    editingId = null;
+  }
+
+  async function saveEdit() {
+    const idx = entries.findIndex(x => x.id === editingId);
+    if (idx === -1) return;
+
+    const name = document.getElementById('editName').value.trim();
+    const date = document.getElementById('editDate').value;
+    const time = document.getElementById('editTime').value;
+    if (!name || !date) { showToast('이름과 날짜는 필수입니다'); return; }
+
+    const spouse = document.getElementById('editSpouse').value.trim();
+    const contact = document.getElementById('editContact').value.trim();
+    const memo = document.getElementById('editMemo').value.trim();
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'update', id: editingId, name, date, time, spouse, contact, memo });
+        if (!result.success) throw new Error(result.error);
+      }
+
+      entries[idx] = { ...entries[idx], name, date, time, spouse, contact, memo };
+      saveLocal(entries);
+      closeEditModal();
+      renderList();
+      updateStats();
+      showToast('수정되었습니다');
+    } catch (err) {
+      showToast('수정 실패: ' + err.message);
+    }
+  }
+
+  // ===== Delete =====
+  async function deleteEntry(id) {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'delete', id });
+        if (!result.success) throw new Error(result.error);
+      }
+
+      entries = entries.filter(x => x.id !== id);
+      saveLocal(entries);
+      renderList();
+      updateStats();
+      renderUpcoming();
+      showToast('삭제되었습니다');
+    } catch (err) {
+      showToast('삭제 실패: ' + err.message);
+    }
+  }
+
+  // ===== Attend (Google Sheets 연동) =====
+  let attendingId = null;
+
+  function getAttendees(entryId) {
+    const e = entries.find(x => x.id === entryId);
+    if (!e || !e.attendees) return [];
+    return String(e.attendees).split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  function openAttendModal(id) {
+    attendingId = id;
+    const e = entries.find(x => x.id === id);
+    const name = e ? (e.spouse ? `${e.name} & ${e.spouse}` : e.name) : '';
+    document.getElementById('attendModalTitle').textContent = `${name} 결혼식 참여`;
+    document.getElementById('attendNickname').value = '';
+
+    const attendees = getAttendees(id);
+    const listEl = document.getElementById('attendeesList');
+    if (attendees.length > 0) {
+      listEl.innerHTML = `<div style="font-size:0.75rem;color:var(--text-quaternary);margin-bottom:6px;">참여자 (${attendees.length}/10)</div>
+        <div class="attendees-list">${attendees.map(a =>
+          `<span class="attendee-chip">${esc(a)} <span onclick="removeAttendee('${id}','${a.replace(/'/g, "\\'")}')" style="cursor:pointer;opacity:0.5;margin-left:2px;">x</span></span>`
+        ).join('')}</div>`;
+    } else {
+      listEl.innerHTML = '<div style="font-size:0.75rem;color:var(--text-quaternary);">아직 참여자가 없습니다</div>';
+    }
+
+    document.getElementById('attendModal').classList.add('show');
+    setTimeout(() => document.getElementById('attendNickname').focus(), 100);
+  }
+
+  function closeAttendModal() {
+    document.getElementById('attendModal').classList.remove('show');
+    attendingId = null;
+  }
+
+  async function submitAttend() {
+    const nickname = document.getElementById('attendNickname').value.trim();
+    if (!nickname) { showToast('닉네임을 입력해주세요'); return; }
+
+    const current = getAttendees(attendingId);
+    if (current.length >= 10) {
+      showToast('참여 인원이 가득 찼습니다 (최대 10명)');
+      return;
+    }
+    if (current.includes(nickname)) {
+      showToast('이미 참여한 닉네임입니다');
+      return;
+    }
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'attend', id: attendingId, nickname });
+        if (!result.success) throw new Error(result.error);
+        // entries 업데이트
+        const idx = entries.findIndex(x => x.id === attendingId);
+        if (idx !== -1) entries[idx].attendees = result.attendees;
+        saveLocal(entries);
+      }
+      showToast(`${nickname}님 참여 완료!`);
+      openAttendModal(attendingId);
+      renderList();
+    } catch (err) {
+      showToast('참여 실패: ' + err.message);
+    }
+  }
+
+  async function removeAttendee(entryId, nickname) {
+    if (!confirm(`${nickname}님의 참여를 취소하시겠습니까?`)) return;
+    try {
+      if (isOnline()) {
+        const result = await apiCall({ action: 'unattend', id: entryId, nickname });
+        if (!result.success) throw new Error(result.error);
+        const idx = entries.findIndex(x => x.id === entryId);
+        if (idx !== -1) entries[idx].attendees = result.attendees;
+        saveLocal(entries);
+      }
+      openAttendModal(entryId);
+      renderList();
+    } catch (err) {
+      showToast('취소 실패: ' + err.message);
+    }
+  }
+
+  // Enter키로 참여
+  document.getElementById('attendNickname').addEventListener('keydown', function(ev) {
+    if (ev.key === 'Enter') submitAttend();
+  });
+
+  // ===== Helpers =====
+  // D-day 계산: 미래 날짜면 실제 날짜까지, 과거 날짜면 올해/내년 기념일까지
+  function getDaysUntil(dateStr) {
+    const d = parseDate(dateStr);
+    if (!d) return Infinity;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 결혼일 자체가 미래면 실제 날짜까지 D-day
+    const original = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (original >= today) {
+      return Math.ceil((original - today) / (1000 * 60 * 60 * 24));
+    }
+
+    // 과거 결혼일이면 올해 기념일 기준
+    const thisYear = today.getFullYear();
+    const next = new Date(thisYear, d.getMonth(), d.getDate());
+    if (next < today) next.setFullYear(thisYear + 1);
+    return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
+  }
+
+  // 시간대 이슈 방지: 날짜를 로컬 시간대로 안전하게 파싱
+  function parseDate(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr);
+    // ISO datetime (2026-08-27T15:00:00.000Z) → 로컬 시간대로 변환
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return null;
+    }
+    // YYYY-MM-DD 순수 날짜 문자열
+    const parts = str.split('-');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    return new Date(str);
+  }
+
+  // Sheets가 시간을 1899-12-30T... Date로 변환하는 문제 방어
+  // UTC → 로컬 시간대(KST 등)로 자동 변환
+  function parseTime(timeVal) {
+    if (!timeVal) return '';
+    const str = String(timeVal);
+    // 이미 HH:MM 형식이면 그대로
+    if (/^\d{1,2}:\d{2}$/.test(str)) return str;
+    // 1899-12-30T07:00:00.000Z 같은 ISO 형태 → Date로 파싱하여 로컬 시간 추출
+    if (str.includes('T')) {
+      const d = new Date(str);
+      if (!isNaN(d)) {
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return `${h}:${m}`;
+      }
+    }
+    return '';
+  }
+
+  function formatDate(dateStr) {
+    const d = parseDate(dateStr);
+    if (!d || isNaN(d)) return '';
+    const days = ['일','월','화','수','목','금','토'];
+    return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. (${days[d.getDay()]})`;
+  }
+
+  function esc(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ===== Tips Tab =====
+  const TIPS_SHEET_ID = '1JuxYbX9SbzVr1hTfeRWyAQpgGLIK1u8Ad-HrGBIQ2Ww';
+  const TIPS_SHEET_NAME = '꿀팁';
+  let tipsData = [];   // [{category, tip, tags}]
+  let tipsLoaded = false;
+  let activeCategory = '전체';
+
+  async function loadTips() {
+    const accordion = document.getElementById('tipsAccordion');
+    accordion.innerHTML = '<div class="tips-loading">꿀팁을 불러오는 중...</div>';
+
+    try {
+      // Google Sheets public CSV export
+      const url = `https://docs.google.com/spreadsheets/d/${TIPS_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(TIPS_SHEET_NAME)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Sheets fetch failed');
+      const csv = await res.text();
+      tipsData = parseTipsCSV(csv);
+      tipsLoaded = true;
+      renderTipsChips();
+      renderTips();
+    } catch (err) {
+      console.error('Tips load error:', err);
+      // Fallback: try loading from embedded data
+      accordion.innerHTML = '<div class="tips-empty">꿀팁을 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
+    }
+  }
+
+  function parseTipsCSV(csv) {
+    const lines = csv.split('\n');
+    const result = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      // CSV parsing with quoted fields
+      const cols = parseCSVLine(line);
+      if (cols.length >= 3) {
+        result.push({
+          category: cols[0].replace(/^"|"$/g, ''),
+          tip: cols[1].replace(/^"|"$/g, ''),
+          tags: cols[2].replace(/^"|"$/g, '').split(',').map(t => t.trim()).filter(Boolean)
+        });
+      }
+    }
+    return result;
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (ch === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    result.push(current);
+    return result;
+  }
+
+  function getCategories() {
+    const cats = {};
+    tipsData.forEach(t => {
+      cats[t.category] = (cats[t.category] || 0) + 1;
+    });
+    return cats;
+  }
+
+  function renderTipsChips() {
+    const cats = getCategories();
+    const container = document.getElementById('tipsChips');
+    const total = tipsData.length;
+
+    let html = `<button class="chip ${activeCategory === '전체' ? 'active' : ''}" onclick="setCategory('전체')">전체 <span class="chip-count">${total}</span></button>`;
+
+    Object.entries(cats).forEach(([cat, count]) => {
+      const isActive = activeCategory === cat ? 'active' : '';
+      html += `<button class="chip ${isActive}" onclick="setCategory('${esc(cat)}')">${esc(cat)} <span class="chip-count">${count}</span></button>`;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function setCategory(cat) {
+    activeCategory = cat;
+    document.getElementById('tipsSearch').value = '';
+    renderTipsChips();
+    renderTips();
+  }
+
+  function filterTips() {
+    renderTips();
+  }
+
+  function renderTips() {
+    const searchQuery = document.getElementById('tipsSearch').value.trim().toLowerCase();
+    const container = document.getElementById('tipsAccordion');
+
+    // Filter
+    let filtered = tipsData;
+    if (activeCategory !== '전체') {
+      filtered = filtered.filter(t => t.category === activeCategory);
+    }
+    if (searchQuery) {
+      filtered = filtered.filter(t =>
+        t.tip.toLowerCase().includes(searchQuery) ||
+        t.tags.some(tag => tag.toLowerCase().includes(searchQuery)) ||
+        t.category.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="tips-empty">검색 결과가 없습니다.</div>';
+      return;
+    }
+
+    // Group by category
+    const grouped = {};
+    filtered.forEach(t => {
+      if (!grouped[t.category]) grouped[t.category] = [];
+      grouped[t.category].push(t);
+    });
+
+    // If search is active, auto-expand all; otherwise first category or selected one
+    const isSearching = searchQuery.length > 0;
+    const isSingleCategory = activeCategory !== '전체';
+
+    let html = '';
+    Object.entries(grouped).forEach(([cat, tips], idx) => {
+      const shouldOpen = isSearching || isSingleCategory || idx === 0;
+      html += `
+        <div class="accordion ${shouldOpen ? 'open' : ''}" data-cat="${esc(cat)}">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-title">${esc(cat)}</span>
+            <div class="accordion-meta">
+              <span class="accordion-count">${tips.length}건</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+          </div>
+          <div class="accordion-body">
+            ${tips.map(t => `
+              <div class="tip-card">
+                <div class="tip-text">${highlightSearch(esc(t.tip), searchQuery)}</div>
+                <div class="tip-tags">
+                  ${t.tags.map(tag => `<span class="tip-tag" onclick="searchByTag('${esc(tag)}')">${esc(tag)}</span>`).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function toggleAccordion(header) {
+    header.parentElement.classList.toggle('open');
+  }
+
+  function searchByTag(tag) {
+    activeCategory = '전체';
+    document.getElementById('tipsSearch').value = tag;
+    renderTipsChips();
+    renderTips();
+  }
+
+  function highlightSearch(text, query) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark style="background:var(--brand-100);color:var(--brand-800);border-radius:2px;padding:0 2px;">$1</mark>');
+  }
+
+  // ===== Buddy Code Tab =====
+  const BUDDY_SHEET_ID = '1JuxYbX9SbzVr1hTfeRWyAQpgGLIK1u8Ad-HrGBIQ2Ww';
+  const BUDDY_SHEET_NAME = '짝꿍코드';
+  let buddyData = [];
+  let buddyLoaded = false;
+  const BUDDY_STORAGE_KEY = 'wedding_buddy_codes';
+
+  async function loadBuddyCodes() {
+    const listEl = document.getElementById('buddyList');
+    listEl.innerHTML = '<div class="tips-loading">짝꿍코드를 불러오는 중...</div>';
+
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${BUDDY_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(BUDDY_SHEET_NAME)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Sheets fetch failed');
+      const csv = await res.text();
+      buddyData = parseBuddyCSV(csv);
+      buddyLoaded = true;
+      // Merge local pending entries
+      const local = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
+      local.forEach(l => {
+        if (!buddyData.some(b => b.vendor === l.vendor && b.code === l.code)) {
+          buddyData.push({ ...l, pending: true });
+        }
+      });
+      renderBuddyChips();
+      renderBuddyList();
+    } catch (err) {
+      console.error('Buddy load error:', err);
+      // Fallback to local
+      buddyData = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
+      if (buddyData.length) {
+        renderBuddyChips();
+        renderBuddyList();
+      } else {
+        document.getElementById('buddyAccordion').innerHTML = '<div class="tips-empty">짝꿍코드를 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
+      }
+    }
+  }
+
+  function parseBuddyCSV(csv) {
+    const lines = csv.split('\n');
+    const result = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const cols = parseCSVLine(line);
+      if (cols.length >= 3) {
+        result.push({
+          vendor: cols[0].replace(/^"|"$/g, ''),
+          category: (cols[1] || '').replace(/^"|"$/g, '') || '기타',
+          code: (cols[2] || '').replace(/^"|"$/g, ''),
+          benefit: (cols[3] || '').replace(/^"|"$/g, ''),
+          expiry: (cols[4] || '').replace(/^"|"$/g, '') || '',
+        });
+      }
+    }
+    return result;
+  }
+
+  let activeBuddyCategory = '전체';
+
+  function getBuddyCategories() {
+    const cats = {};
+    buddyData.forEach(b => {
+      const cat = b.category || '기타';
+      cats[cat] = (cats[cat] || 0) + 1;
+    });
+    return cats;
+  }
+
+  function renderBuddyChips() {
+    const cats = getBuddyCategories();
+    const container = document.getElementById('buddyChips');
+    const total = buddyData.length;
+    let html = `<button class="chip ${activeBuddyCategory === '전체' ? 'active' : ''}" onclick="setBuddyCategory('전체')">전체 <span class="chip-count">${total}</span></button>`;
+    Object.entries(cats).forEach(([cat, count]) => {
+      const isActive = activeBuddyCategory === cat ? 'active' : '';
+      html += `<button class="chip ${isActive}" onclick="setBuddyCategory('${esc(cat)}')">${esc(cat)} <span class="chip-count">${count}</span></button>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function setBuddyCategory(cat) {
+    activeBuddyCategory = cat;
+    document.getElementById('buddySearch').value = '';
+    renderBuddyChips();
+    renderBuddyList();
+  }
+
+  function renderBuddyList() {
+    const query = document.getElementById('buddySearch').value.trim().toLowerCase();
+    let filtered = buddyData;
+
+    if (activeBuddyCategory !== '전체') {
+      filtered = filtered.filter(b => b.category === activeBuddyCategory);
+    }
+    if (query) {
+      filtered = filtered.filter(b =>
+        b.vendor.toLowerCase().includes(query) ||
+        b.benefit.toLowerCase().includes(query) ||
+        b.category.toLowerCase().includes(query) ||
+        b.code.toLowerCase().includes(query)
+      );
+    }
+
+    const container = document.getElementById('buddyAccordion');
+
+    if (filtered.length === 0) {
+      container.innerHTML = '<div class="tips-empty">등록된 짝꿍코드가 없습니다.</div>';
+      return;
+    }
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Sort within each group: expired last, then expiry asc
+    filtered.sort((a, b) => {
+      const aExp = a.expiry ? new Date(a.expiry) : null;
+      const bExp = b.expiry ? new Date(b.expiry) : null;
+      const aExpired = aExp && aExp < now;
+      const bExpired = bExp && bExp < now;
+      if (aExpired !== bExpired) return aExpired ? 1 : -1;
+      if (aExp && bExp) return aExp - bExp;
+      if (aExp) return -1;
+      return 1;
+    });
+
+    // Group by category
+    const grouped = {};
+    filtered.forEach(b => {
+      const cat = b.category || '기타';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(b);
+    });
+
+    const isSearching = query.length > 0;
+    const isSingleCategory = activeBuddyCategory !== '전체';
+
+    const categoryIcons = {
+      '스냅': '📷', 'DVD/영상': '🎥', '드레스': '👗', '메이크업': '💄',
+      '스튜디오': '📸', '반지/예물': '💍', '사회자': '🎤', '허니문': '🏝',
+      '기타': '🎁'
+    };
+
+    let html = '';
+    Object.entries(grouped).forEach(([cat, items], idx) => {
+      const shouldOpen = isSearching || isSingleCategory || idx === 0;
+
+      const cardsHtml = items.map(b => {
+        let isExpired = false;
+        let expiryLabel = '';
+        if (b.expiry) {
+          const expDate = new Date(b.expiry);
+          if (!isNaN(expDate)) {
+            isExpired = expDate < now;
+            const diff = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+            if (isExpired) {
+              expiryLabel = '마감됨';
+            } else if (diff <= 14) {
+              expiryLabel = `D-${diff}`;
+            } else {
+              expiryLabel = b.expiry.slice(0, 10) + ' 마감';
+            }
+          }
+        }
+
+        let icon = '🎁';
+        for (const [key, ic] of Object.entries(categoryIcons)) {
+          if (b.category.startsWith(key)) { icon = ic; break; }
+        }
+
+        return `
+          <div class="buddy-card ${isExpired ? 'stale' : ''}">
+            <div class="buddy-icon">${icon}</div>
+            <div class="buddy-info">
+              <div class="buddy-vendor">${esc(b.vendor)}</div>
+              ${b.code ? '<div class="buddy-benefit" style="font-weight:600;color:var(--brand-700);">코드: ' + esc(b.code) + '</div>' : ''}
+              <div class="buddy-benefit">${esc(b.benefit)}</div>
+              <div class="buddy-meta">
+                ${expiryLabel ? '<span' + (isExpired ? ' style="color:var(--error-600);"' : expiryLabel.startsWith('D-') ? ' style="color:var(--warning-600);font-weight:600;"' : '') + '>' + expiryLabel + '</span>' : ''}
+                ${b.pending ? '<span style="color:var(--warning-600);">시트 반영 대기중</span>' : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      html += `
+        <div class="accordion ${shouldOpen ? 'open' : ''}" data-cat="${esc(cat)}">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-title">${esc(cat)}</span>
+            <div class="accordion-meta">
+              <span class="accordion-count">${items.length}건</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+          </div>
+          <div class="accordion-body">
+            ${cardsHtml}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  async function addBuddyCode() {
+    const vendor = document.getElementById('buddyVendor').value.trim();
+    const category = document.getElementById('buddyCategory').value;
+    const code = document.getElementById('buddyCode').value.trim();
+    const benefit = document.getElementById('buddyBenefit').value.trim();
+    const expiry = document.getElementById('buddyExpiry').value;
+
+    if (!vendor) { showToast('업체명을 입력해주세요'); return; }
+    if (!code) { showToast('코드를 입력해주세요'); return; }
+    if (!benefit) { showToast('혜택 내용을 입력해주세요'); return; }
+
+    // Check duplicate
+    if (buddyData.some(b => b.vendor === vendor && b.code === code)) {
+      showToast('이미 같은 업체에 등록된 코드입니다');
+      return;
+    }
+
+    const btn = document.getElementById('btnBuddySubmit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    const entry = { vendor, category, code, benefit, expiry };
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({
+          action: 'addBuddy',
+          vendor, category, code, benefit, expiry
+        });
+        if (result.success) {
+          buddyData.push(entry);
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } else {
+        throw new Error('offline');
+      }
+    } catch (err) {
+      entry.pending = true;
+      buddyData.push(entry);
+      const local = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
+      local.push(entry);
+      localStorage.setItem(BUDDY_STORAGE_KEY, JSON.stringify(local));
+    }
+
+    document.getElementById('buddyVendor').value = '';
+    document.getElementById('buddyCode').value = '';
+    document.getElementById('buddyBenefit').value = '';
+    document.getElementById('buddyExpiry').value = '';
+
+    showToast(`${vendor} 짝꿍코드가 등록되었습니다!`);
+    renderBuddyChips();
+    renderBuddyList();
+
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+  }
+
+  // ===== Init =====
+  if (!isOnline()) {
+    document.getElementById('setupBanner').style.display = 'block';
+  }
+  loadFromSheet();
+</script>
 
 </body>
 </html>
