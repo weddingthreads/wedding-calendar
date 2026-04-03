@@ -1193,14 +1193,9 @@
         <button class="btn-submit" id="btnBuddySubmit" onclick="addBuddyCode()">등록하기</button>
       </div>
     </div>
-    <div class="buddy-filters">
-      <input type="text" id="buddySearch" placeholder="업체명 또는 혜택으로 검색..." oninput="renderBuddyList()">
-    </div>
-    <div class="buddy-list-header">
-      <h3>짝꿍코드 목록</h3>
-      <span class="buddy-list-count" id="buddyCount">0건</span>
-    </div>
-    <div id="buddyList"></div>
+    <input type="text" class="tips-search" id="buddySearch" placeholder="업체명, 코드, 혜택으로 검색..." oninput="renderBuddyList()">
+    <div class="tips-chips" id="buddyChips"></div>
+    <div class="accordion-group" id="buddyAccordion"></div>
   </div>
 
   <!-- List Tab -->
@@ -2108,19 +2103,21 @@
       // Merge local pending entries
       const local = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
       local.forEach(l => {
-        if (!buddyData.some(b => b.vendor === l.vendor && b.nickname === l.nickname)) {
+        if (!buddyData.some(b => b.vendor === l.vendor && b.code === l.code)) {
           buddyData.push({ ...l, pending: true });
         }
       });
+      renderBuddyChips();
       renderBuddyList();
     } catch (err) {
       console.error('Buddy load error:', err);
       // Fallback to local
       buddyData = JSON.parse(localStorage.getItem(BUDDY_STORAGE_KEY) || '[]');
       if (buddyData.length) {
+        renderBuddyChips();
         renderBuddyList();
       } else {
-        listEl.innerHTML = '<div class="tips-empty">짝꿍코드를 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
+        document.getElementById('buddyAccordion').innerHTML = '<div class="tips-empty">짝꿍코드를 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
       }
     }
   }
@@ -2145,10 +2142,43 @@
     return result;
   }
 
+  let activeBuddyCategory = '전체';
+
+  function getBuddyCategories() {
+    const cats = {};
+    buddyData.forEach(b => {
+      const cat = b.category || '기타';
+      cats[cat] = (cats[cat] || 0) + 1;
+    });
+    return cats;
+  }
+
+  function renderBuddyChips() {
+    const cats = getBuddyCategories();
+    const container = document.getElementById('buddyChips');
+    const total = buddyData.length;
+    let html = `<button class="chip ${activeBuddyCategory === '전체' ? 'active' : ''}" onclick="setBuddyCategory('전체')">전체 <span class="chip-count">${total}</span></button>`;
+    Object.entries(cats).forEach(([cat, count]) => {
+      const isActive = activeBuddyCategory === cat ? 'active' : '';
+      html += `<button class="chip ${isActive}" onclick="setBuddyCategory('${esc(cat)}')">${esc(cat)} <span class="chip-count">${count}</span></button>`;
+    });
+    container.innerHTML = html;
+  }
+
+  function setBuddyCategory(cat) {
+    activeBuddyCategory = cat;
+    document.getElementById('buddySearch').value = '';
+    renderBuddyChips();
+    renderBuddyList();
+  }
+
   function renderBuddyList() {
     const query = document.getElementById('buddySearch').value.trim().toLowerCase();
     let filtered = buddyData;
 
+    if (activeBuddyCategory !== '전체') {
+      filtered = filtered.filter(b => b.category === activeBuddyCategory);
+    }
     if (query) {
       filtered = filtered.filter(b =>
         b.vendor.toLowerCase().includes(query) ||
@@ -2158,17 +2188,17 @@
       );
     }
 
-    document.getElementById('buddyCount').textContent = filtered.length + '건';
+    const container = document.getElementById('buddyAccordion');
 
     if (filtered.length === 0) {
-      document.getElementById('buddyList').innerHTML = '<div class="tips-empty">등록된 짝꿍코드가 없습니다.</div>';
+      container.innerHTML = '<div class="tips-empty">등록된 짝꿍코드가 없습니다.</div>';
       return;
     }
 
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Sort: expired last, then by expiry asc (soonest first)
+    // Sort within each group: expired last, then expiry asc
     filtered.sort((a, b) => {
       const aExp = a.expiry ? new Date(a.expiry) : null;
       const bExp = b.expiry ? new Date(b.expiry) : null;
@@ -2180,52 +2210,83 @@
       return 1;
     });
 
-    const html = filtered.map(b => {
-      let isExpired = false;
-      let expiryLabel = '';
-      if (b.expiry) {
-        const expDate = new Date(b.expiry);
-        if (!isNaN(expDate)) {
-          isExpired = expDate < now;
-          const diff = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
-          if (isExpired) {
-            expiryLabel = '마감됨';
-          } else if (diff <= 14) {
-            expiryLabel = `D-${diff}`;
-          } else {
-            expiryLabel = b.expiry.slice(0, 10) + ' 마감';
+    // Group by category
+    const grouped = {};
+    filtered.forEach(b => {
+      const cat = b.category || '기타';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(b);
+    });
+
+    const isSearching = query.length > 0;
+    const isSingleCategory = activeBuddyCategory !== '전체';
+
+    const categoryIcons = {
+      '스냅': '📷', 'DVD/영상': '🎥', '드레스': '👗', '메이크업': '💄',
+      '스튜디오': '📸', '반지/예물': '💍', '사회자': '🎤', '허니문': '🏝',
+      '기타': '🎁'
+    };
+
+    let html = '';
+    Object.entries(grouped).forEach(([cat, items], idx) => {
+      const shouldOpen = isSearching || isSingleCategory || idx === 0;
+
+      const cardsHtml = items.map(b => {
+        let isExpired = false;
+        let expiryLabel = '';
+        if (b.expiry) {
+          const expDate = new Date(b.expiry);
+          if (!isNaN(expDate)) {
+            isExpired = expDate < now;
+            const diff = Math.ceil((expDate - now) / (1000 * 60 * 60 * 24));
+            if (isExpired) {
+              expiryLabel = '마감됨';
+            } else if (diff <= 14) {
+              expiryLabel = `D-${diff}`;
+            } else {
+              expiryLabel = b.expiry.slice(0, 10) + ' 마감';
+            }
           }
         }
-      }
 
-      const categoryIcons = {
-        '스냅': '📷', 'DVD/영상': '🎥', '드레스': '👗', '메이크업': '💄',
-        '스튜디오': '📸', '반지/예물': '💍', '사회자': '🎤', '허니문': '🏝',
-        '기타': '🎁'
-      };
-      // Match category that starts with known key
-      let icon = '🎁';
-      for (const [key, ic] of Object.entries(categoryIcons)) {
-        if (b.category.startsWith(key)) { icon = ic; break; }
-      }
+        let icon = '🎁';
+        for (const [key, ic] of Object.entries(categoryIcons)) {
+          if (b.category.startsWith(key)) { icon = ic; break; }
+        }
 
-      return `
-        <div class="buddy-card ${isExpired ? 'stale' : ''}">
-          <div class="buddy-icon">${icon}</div>
-          <div class="buddy-info">
-            <div class="buddy-vendor">${esc(b.vendor)} <span class="buddy-category-badge">${esc(b.category)}</span></div>
-            ${b.code ? '<div class="buddy-benefit" style="font-weight:600;color:var(--brand-700);">코드: ' + esc(b.code) + '</div>' : ''}
-            <div class="buddy-benefit">${esc(b.benefit)}</div>
-            <div class="buddy-meta">
-              ${expiryLabel ? '<span' + (isExpired ? ' style="color:var(--error-600);"' : expiryLabel.startsWith('D-') ? ' style="color:var(--warning-600);font-weight:600;"' : '') + '>' + expiryLabel + '</span>' : ''}
-              ${b.pending ? '<span style="color:var(--warning-600);">시트 반영 대기중</span>' : ''}
+        return `
+          <div class="buddy-card ${isExpired ? 'stale' : ''}">
+            <div class="buddy-icon">${icon}</div>
+            <div class="buddy-info">
+              <div class="buddy-vendor">${esc(b.vendor)}</div>
+              ${b.code ? '<div class="buddy-benefit" style="font-weight:600;color:var(--brand-700);">코드: ' + esc(b.code) + '</div>' : ''}
+              <div class="buddy-benefit">${esc(b.benefit)}</div>
+              <div class="buddy-meta">
+                ${expiryLabel ? '<span' + (isExpired ? ' style="color:var(--error-600);"' : expiryLabel.startsWith('D-') ? ' style="color:var(--warning-600);font-weight:600;"' : '') + '>' + expiryLabel + '</span>' : ''}
+                ${b.pending ? '<span style="color:var(--warning-600);">시트 반영 대기중</span>' : ''}
+              </div>
             </div>
+          </div>
+        `;
+      }).join('');
+
+      html += `
+        <div class="accordion ${shouldOpen ? 'open' : ''}" data-cat="${esc(cat)}">
+          <div class="accordion-header" onclick="toggleAccordion(this)">
+            <span class="accordion-title">${esc(cat)}</span>
+            <div class="accordion-meta">
+              <span class="accordion-count">${items.length}건</span>
+              <span class="accordion-arrow">▼</span>
+            </div>
+          </div>
+          <div class="accordion-body">
+            ${cardsHtml}
           </div>
         </div>
       `;
-    }).join('');
+    });
 
-    document.getElementById('buddyList').innerHTML = html;
+    container.innerHTML = html;
   }
 
   async function addBuddyCode() {
@@ -2279,6 +2340,7 @@
     document.getElementById('buddyExpiry').value = '';
 
     showToast(`${vendor} 짝꿍코드가 등록되었습니다!`);
+    renderBuddyChips();
     renderBuddyList();
 
     btn.disabled = false;
