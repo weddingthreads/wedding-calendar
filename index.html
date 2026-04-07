@@ -253,6 +253,55 @@
 
   .form-group textarea { resize: none; height: 60px; }
 
+  /* Toggle button group for 품앗이 */
+  .toggle-group {
+    display: flex;
+    gap: var(--spacing-md);
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--rounded-lg);
+    background: var(--bg-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-quaternary);
+    text-align: center;
+  }
+
+  .toggle-btn:hover {
+    border-color: var(--brand-300);
+    background: var(--bg-secondary-hover);
+  }
+
+  .toggle-btn.active {
+    border-color: var(--brand-500);
+    background: var(--brand-50);
+    color: var(--brand-700);
+  }
+
+  .toggle-btn .toggle-icon {
+    display: block;
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+  }
+
+  .toggle-btn .toggle-desc {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 400;
+    color: var(--text-quaternary);
+    margin-top: 2px;
+  }
+
+  .toggle-btn.active .toggle-desc {
+    color: var(--brand-600);
+  }
+
   .btn-submit {
     grid-column: 1 / -1;
     padding: var(--spacing-lg);
@@ -489,7 +538,7 @@
 
   .entry-memo { font-size: 0.75rem; color: var(--text-quaternary); margin-top: var(--spacing-xs); }
 
-  .entry-actions { display: flex; gap: var(--spacing-sm); }
+  .entry-actions { display: flex; gap: var(--spacing-sm); align-items: center; }
 
   .btn-icon {
     width: 32px; height: 32px;
@@ -535,6 +584,19 @@
     justify-content: center;
     font-size: 0.625rem;
     font-weight: 700;
+  }
+
+  .help-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: var(--rounded-full);
+    background: var(--success-50);
+    color: var(--success-700);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    white-space: nowrap;
   }
 
   .attendees-list {
@@ -1046,6 +1108,7 @@
     .cal-day { font-size: 0.75rem; }
     .tips-chips { gap: 4px; }
     .chip { font-size: 0.6875rem; padding: 4px 8px; }
+    .toggle-group { flex-direction: column; }
   }
 </style>
 </head>
@@ -1125,6 +1188,21 @@
         <div class="form-group full">
           <label>장소 (선택)</label>
           <input type="text" id="inputMemo" placeholder="예: 더채플앳청담">
+        </div>
+        <div class="form-group full">
+          <label>품앗이 참여</label>
+          <div class="toggle-group">
+            <button type="button" class="toggle-btn active" id="toggleWantsHelp" onclick="setWantsHelp(true)">
+              <span class="toggle-icon">&#129309;</span>
+              품앗이 원해요
+              <span class="toggle-desc">다른 친구들이 참여할 수 있어요</span>
+            </button>
+            <button type="button" class="toggle-btn" id="toggleNoHelp" onclick="setWantsHelp(false)">
+              <span class="toggle-icon">&#128221;</span>
+              그냥 등록해요
+              <span class="toggle-desc">일정만 기록할게요</span>
+            </button>
+          </div>
         </div>
         <button class="btn-submit" id="btnSubmit" onclick="addEntry()">등록하기</button>
       </div>
@@ -1251,6 +1329,19 @@
       <label>장소</label>
       <input type="text" id="editMemo">
     </div>
+    <div class="form-group">
+      <label>품앗이 참여</label>
+      <div class="toggle-group">
+        <button type="button" class="toggle-btn" id="editToggleWantsHelp" onclick="setEditWantsHelp(true)">
+          <span class="toggle-icon">&#129309;</span>
+          품앗이 원해요
+        </button>
+        <button type="button" class="toggle-btn" id="editToggleNoHelp" onclick="setEditWantsHelp(false)">
+          <span class="toggle-icon">&#128221;</span>
+          그냥 등록해요
+        </button>
+      </div>
+    </div>
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeEditModal()">취소</button>
       <button class="btn-save" onclick="saveEdit()">저장</button>
@@ -1277,9 +1368,6 @@
   // ============================================
   //  Google Sheets 연동 설정
   // ============================================
-  //  아래 URL을 Apps Script 배포 URL로 교체하세요.
-  //  비어있으면 오프라인 모드(localStorage)로 동작합니다.
-  // ============================================
   const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMGOfPjO_LjgFXbDeor-k_GsQC3AKhc7LR8-0JVttxkJJQRp34uumnkTj6Ub_Kynbm/exec';
   // ============================================
 
@@ -1290,6 +1378,29 @@
   let currentMonth = new Date().getMonth();
   let currentYear = new Date().getFullYear();
   let editingId = null;
+
+  // ===== 품앗이 토글 상태 =====
+  let registerWantsHelp = true;
+  let editWantsHelp = true;
+
+  function setWantsHelp(val) {
+    registerWantsHelp = val;
+    document.getElementById('toggleWantsHelp').classList.toggle('active', val);
+    document.getElementById('toggleNoHelp').classList.toggle('active', !val);
+  }
+
+  function setEditWantsHelp(val) {
+    editWantsHelp = val;
+    document.getElementById('editToggleWantsHelp').classList.toggle('active', val);
+    document.getElementById('editToggleNoHelp').classList.toggle('active', !val);
+  }
+
+  // 기존 데이터에 wantsHelp 필드가 없으면 true로 간주
+  function entryWantsHelp(e) {
+    if (e.wantsHelp === undefined || e.wantsHelp === null || e.wantsHelp === '') return true;
+    if (e.wantsHelp === false || e.wantsHelp === 'false' || e.wantsHelp === 'FALSE') return false;
+    return true;
+  }
 
   // ===== API Helper =====
   async function apiCall(params) {
@@ -1323,7 +1434,7 @@
       const result = await apiCall({ action: 'read' });
       if (result.success) {
         entries = result.entries;
-        saveLocal(entries); // cache locally
+        saveLocal(entries);
         updateSyncBar(`동기화 완료 (${new Date().toLocaleTimeString('ko')})`);
       } else {
         throw new Error(result.error);
@@ -1386,6 +1497,7 @@
     const spouse = document.getElementById('inputSpouse').value.trim();
     const contact = document.getElementById('inputContact').value.trim();
     const memo = document.getElementById('inputMemo').value.trim();
+    const wantsHelp = registerWantsHelp;
 
     if (!name) { showToast('이름을 입력해주세요'); return; }
     if (!date) { showToast('결혼일을 선택해주세요'); return; }
@@ -1396,9 +1508,11 @@
 
     try {
       if (isOnline()) {
-        const result = await apiCall({ action: 'add', name, date, time, spouse, contact, memo });
+        const result = await apiCall({ action: 'add', name, date, time, spouse, contact, memo, wantsHelp: wantsHelp.toString() });
         if (result.success) {
-          entries.push(result.entry);
+          const entry = result.entry;
+          if (entry.wantsHelp === undefined) entry.wantsHelp = wantsHelp;
+          entries.push(entry);
           saveLocal(entries);
         } else {
           throw new Error(result.error);
@@ -1406,7 +1520,7 @@
       } else {
         const entry = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          name, date, time, spouse, contact, memo,
+          name, date, time, spouse, contact, memo, wantsHelp,
           createdAt: new Date().toISOString()
         };
         entries.push(entry);
@@ -1420,6 +1534,7 @@
       document.getElementById('inputSpouse').value = '';
       document.getElementById('inputContact').value = '';
       document.getElementById('inputMemo').value = '';
+      setWantsHelp(true); // reset toggle
 
       showToast(`${name}님의 결혼일이 등록되었습니다!`);
       refreshAll();
@@ -1624,7 +1739,7 @@
 
     const listEl = document.getElementById('entryList');
     if (filtered.length === 0) {
-      listEl.innerHTML = `<div class="empty-state"><div class="emoji">💍</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 결혼일이 없습니다'}</p></div>`;
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">&#128141;</div><p>${query ? '검색 결과가 없습니다' : '아직 등록된 결혼일이 없습니다'}</p></div>`;
       return;
     }
 
@@ -1638,21 +1753,22 @@
         : dday <= 30 ? `<span class="upcoming-tag tag-this-month">D-${dday}</span>`
         : `<span class="upcoming-tag" style="background:var(--gray-100);color:var(--gray-500);">D-${dday}</span>`;
       const attendCount = getAttendees(e.id).length;
+      const showAttend = entryWantsHelp(e);
       return `<div class="entry-card" style="flex-wrap:wrap;">
         <div class="entry-date-badge">
           <span class="month">${d.getMonth() + 1}월</span>
           <span class="day">${d.getDate()}</span>
         </div>
         <div class="entry-info">
-          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${ddayTag}</div>
+          <div class="entry-name">${esc(e.name)}${e.spouse ? ' &amp; ' + esc(e.spouse) : ''} ${ddayTag}${showAttend ? ' <span class="help-badge">&#129309; 품앗이</span>' : ''}</div>
           <div class="entry-detail">${formatDate(e.date)}${timeText}${years > 0 ? ` (${years}주년)` : ''}</div>
           ${e.contact ? `<div class="entry-detail">${esc(e.contact)}</div>` : ''}
           ${e.memo ? `<div class="entry-memo">${esc(e.memo)}</div>` : ''}
         </div>
         <div class="entry-actions">
-          <button class="btn-attend" onclick="openAttendModal('${e.id}')">
+          ${showAttend ? `<button class="btn-attend" onclick="openAttendModal('${e.id}')">
             참여 <span class="attend-count">${attendCount}</span>
-          </button>
+          </button>` : ''}
           <button class="btn-icon" onclick="openEdit('${e.id}')" title="수정">&#9998;</button>
           <button class="btn-icon delete" onclick="deleteEntry('${e.id}')" title="삭제">&#10005;</button>
         </div>
@@ -1666,7 +1782,6 @@
     if (!e) return;
     editingId = id;
     document.getElementById('editName').value = e.name || '';
-    // date input은 YYYY-MM-DD 형식 필요
     const d = parseDate(e.date);
     if (d && !isNaN(d)) {
       const y = d.getFullYear();
@@ -1676,11 +1791,15 @@
     } else {
       document.getElementById('editDate').value = '';
     }
-    // time input은 HH:MM 형식 필요
     document.getElementById('editTime').value = parseTime(e.time) || '';
     document.getElementById('editSpouse').value = e.spouse || '';
     document.getElementById('editContact').value = e.contact || '';
     document.getElementById('editMemo').value = e.memo || '';
+
+    // 품앗이 토글 설정
+    editWantsHelp = entryWantsHelp(e);
+    setEditWantsHelp(editWantsHelp);
+
     document.getElementById('editModal').classList.add('show');
   }
 
@@ -1701,14 +1820,15 @@
     const spouse = document.getElementById('editSpouse').value.trim();
     const contact = document.getElementById('editContact').value.trim();
     const memo = document.getElementById('editMemo').value.trim();
+    const wantsHelp = editWantsHelp;
 
     try {
       if (isOnline()) {
-        const result = await apiCall({ action: 'update', id: editingId, name, date, time, spouse, contact, memo });
+        const result = await apiCall({ action: 'update', id: editingId, name, date, time, spouse, contact, memo, wantsHelp: wantsHelp.toString() });
         if (!result.success) throw new Error(result.error);
       }
 
-      entries[idx] = { ...entries[idx], name, date, time, spouse, contact, memo };
+      entries[idx] = { ...entries[idx], name, date, time, spouse, contact, memo, wantsHelp };
       saveLocal(entries);
       closeEditModal();
       renderList();
@@ -1794,7 +1914,6 @@
       if (isOnline()) {
         const result = await apiCall({ action: 'attend', id: attendingId, nickname });
         if (!result.success) throw new Error(result.error);
-        // entries 업데이트
         const idx = entries.findIndex(x => x.id === attendingId);
         if (idx !== -1) entries[idx].attendees = result.attendees;
         saveLocal(entries);
@@ -1830,37 +1949,31 @@
   });
 
   // ===== Helpers =====
-  // D-day 계산: 미래 날짜면 실제 날짜까지, 과거 날짜면 올해/내년 기념일까지
   function getDaysUntil(dateStr) {
     const d = parseDate(dateStr);
     if (!d) return Infinity;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 결혼일 자체가 미래면 실제 날짜까지 D-day
     const original = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     if (original >= today) {
       return Math.ceil((original - today) / (1000 * 60 * 60 * 24));
     }
 
-    // 과거 결혼일이면 올해 기념일 기준
     const thisYear = today.getFullYear();
     const next = new Date(thisYear, d.getMonth(), d.getDate());
     if (next < today) next.setFullYear(thisYear + 1);
     return Math.ceil((next - today) / (1000 * 60 * 60 * 24));
   }
 
-  // 시간대 이슈 방지: 날짜를 로컬 시간대로 안전하게 파싱
   function parseDate(dateStr) {
     if (!dateStr) return null;
     const str = String(dateStr);
-    // ISO datetime (2026-08-27T15:00:00.000Z) → 로컬 시간대로 변환
     if (str.includes('T')) {
       const d = new Date(str);
       if (!isNaN(d)) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return null;
     }
-    // YYYY-MM-DD 순수 날짜 문자열
     const parts = str.split('-');
     if (parts.length === 3) {
       return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -1868,14 +1981,10 @@
     return new Date(str);
   }
 
-  // Sheets가 시간을 1899-12-30T... Date로 변환하는 문제 방어
-  // UTC → 로컬 시간대(KST 등)로 자동 변환
   function parseTime(timeVal) {
     if (!timeVal) return '';
     const str = String(timeVal);
-    // 이미 HH:MM 형식이면 그대로
     if (/^\d{1,2}:\d{2}$/.test(str)) return str;
-    // 1899-12-30T07:00:00.000Z 같은 ISO 형태 → Date로 파싱하여 로컬 시간 추출
     if (str.includes('T')) {
       const d = new Date(str);
       if (!isNaN(d)) {
@@ -1903,11 +2012,10 @@
   // ===== Tips Tab =====
   const TIPS_SHEET_ID = '1JuxYbX9SbzVr1hTfeRWyAQpgGLIK1u8Ad-HrGBIQ2Ww';
   const TIPS_SHEET_NAME = '꿀팁';
-  let tipsData = [];   // [{category, tip, tags}]
+  let tipsData = [];
   let tipsLoaded = false;
   let activeCategory = '전체';
 
-  // JSONP-style loader for Google Sheets (works from file:// too)
   function loadSheetJSONP(sheetId, sheetName) {
     return new Promise((resolve, reject) => {
       const callbackName = '_sheetCb_' + Math.random().toString(36).slice(2);
@@ -1937,7 +2045,6 @@
 
     try {
       const rows = await loadSheetJSONP(TIPS_SHEET_ID, TIPS_SHEET_NAME);
-      // Skip header row and filter out noise (empty or non-category rows)
       const validCategories = ['웨딩홀','스드메','드레스','메이크업','촬영/영상','반지/예물','부케/꽃','구두/속옷','사회/축가','다이어트/관리','비용/견적','청첩장/답례품','허니문','기타'];
       tipsData = rows
         .filter(r => r[0] && validCategories.includes(r[0]))
@@ -1961,7 +2068,6 @@
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
-      // CSV parsing with quoted fields
       const cols = parseCSVLine(line);
       if (cols.length >= 3) {
         result.push({
@@ -2036,7 +2142,6 @@
     const searchQuery = document.getElementById('tipsSearch').value.trim().toLowerCase();
     const container = document.getElementById('tipsAccordion');
 
-    // Filter
     let filtered = tipsData;
     if (activeCategory !== '전체') {
       filtered = filtered.filter(t => t.category === activeCategory);
@@ -2054,14 +2159,12 @@
       return;
     }
 
-    // Group by category
     const grouped = {};
     filtered.forEach(t => {
       if (!grouped[t.category]) grouped[t.category] = [];
       grouped[t.category].push(t);
     });
 
-    // If search is active, auto-expand all; otherwise first category or selected one
     const isSearching = searchQuery.length > 0;
     const isSingleCategory = activeCategory !== '전체';
 
@@ -2074,7 +2177,7 @@
             <span class="accordion-title">${esc(cat)}</span>
             <div class="accordion-meta">
               <span class="accordion-count">${tips.length}건</span>
-              <span class="accordion-arrow">▼</span>
+              <span class="accordion-arrow">&#9660;</span>
             </div>
           </div>
           <div class="accordion-body">
@@ -2228,7 +2331,6 @@
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    // Sort within each group: expired last, then expiry asc
     filtered.sort((a, b) => {
       const aExp = a.expiry ? new Date(a.expiry) : null;
       const bExp = b.expiry ? new Date(b.expiry) : null;
@@ -2240,7 +2342,6 @@
       return 1;
     });
 
-    // Group by category
     const grouped = {};
     filtered.forEach(b => {
       const cat = b.category || '기타';
@@ -2252,9 +2353,9 @@
     const isSingleCategory = activeBuddyCategory !== '전체';
 
     const categoryIcons = {
-      '스냅': '📷', 'DVD/영상': '🎥', '드레스': '👗', '메이크업': '💄',
-      '스튜디오': '📸', '반지/예물': '💍', '사회자': '🎤', '허니문': '🏝',
-      '기타': '🎁'
+      '스냅': '&#128247;', 'DVD/영상': '&#127909;', '드레스': '&#128087;', '메이크업': '&#128132;',
+      '스튜디오': '&#128248;', '반지/예물': '&#128141;', '사회자': '&#127908;', '허니문': '&#127965;',
+      '기타': '&#127873;'
     };
 
     let html = '';
@@ -2279,7 +2380,7 @@
           }
         }
 
-        let icon = '🎁';
+        let icon = '&#127873;';
         for (const [key, ic] of Object.entries(categoryIcons)) {
           if (b.category.startsWith(key)) { icon = ic; break; }
         }
@@ -2306,7 +2407,7 @@
             <span class="accordion-title">${esc(cat)}</span>
             <div class="accordion-meta">
               <span class="accordion-count">${items.length}건</span>
-              <span class="accordion-arrow">▼</span>
+              <span class="accordion-arrow">&#9660;</span>
             </div>
           </div>
           <div class="accordion-body">
@@ -2330,7 +2431,6 @@
     if (!code) { showToast('코드를 입력해주세요'); return; }
     if (!benefit) { showToast('혜택 내용을 입력해주세요'); return; }
 
-    // Check duplicate
     if (buddyData.some(b => b.vendor === vendor && b.code === code)) {
       showToast('이미 같은 업체에 등록된 코드입니다');
       return;
