@@ -1383,6 +1383,25 @@
   </div>
 </div>
 
+<!-- Blog Edit Modal -->
+<div class="modal-overlay" id="blogEditModal" onclick="if(event.target===this)closeBlogEditModal()">
+  <div class="modal-content">
+    <h3>블로그 수정</h3>
+    <div class="form-group">
+      <label>블로그 URL</label>
+      <input type="url" id="editBlogUrl" placeholder="입력하기">
+    </div>
+    <div class="form-group">
+      <label>톡방 닉네임 (선택)</label>
+      <input type="text" id="editBlogNickname" placeholder="입력하기">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeBlogEditModal()">취소</button>
+      <button class="btn-save" onclick="saveBlogEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -2512,11 +2531,13 @@
 
     try {
       const rows = await loadSheetJSONP(BLOG_SHEET_ID, BLOG_SHEET_NAME);
-      blogData = rows.filter(r => r[0]).map((r, i) => ({
-        row: i + 2, // 시트 행 번호 (1행=헤더, 2행부터 데이터)
-        url: r[0] || '',
-        nickname: r[1] || '',
-      }));
+      blogData = rows
+        .filter(r => r[0] && r[0] !== 'URL' && r[0] !== 'url')
+        .map((r, i) => ({
+          row: i + 2,
+          url: r[0] || '',
+          nickname: r[1] || '',
+        }));
       blogLoaded = true;
       const local = JSON.parse(localStorage.getItem(BLOG_STORAGE_KEY) || '[]');
       local.forEach(l => {
@@ -2569,7 +2590,8 @@
           ${b.pending ? '<div class="entry-memo" style="color:var(--warning-600);font-size:0.75rem;">시트 반영 대기중</div>' : ''}
         </div>
         <div class="entry-actions">
-          <button class="btn-icon" onclick="editBlogNickname(${dataIdx})" title="닉네임 수정">&#9998;</button>
+          <button class="btn-icon" onclick="editBlogEntry(${dataIdx})" title="수정">&#9998;</button>
+          <button class="btn-icon delete" onclick="deleteBlogEntry(${dataIdx})" title="삭제">&#10005;</button>
         </div>
       </div>`;
     }).join('');
@@ -2625,32 +2647,72 @@
     btn.textContent = '등록하기';
   }
 
-  function editBlogNickname(idx) {
+  let editingBlogIdx = null;
+
+  function editBlogEntry(idx) {
     const b = blogData[idx];
     if (!b) return;
-    const nickname = prompt('톡방 닉네임을 입력하세요:', b.nickname || '');
-    if (nickname === null) return; // 취소
-    updateBlogNickname(idx, nickname.trim());
+    editingBlogIdx = idx;
+    document.getElementById('editBlogUrl').value = b.url || '';
+    document.getElementById('editBlogNickname').value = b.nickname || '';
+    document.getElementById('blogEditModal').classList.add('show');
   }
 
-  async function updateBlogNickname(idx, nickname) {
-    const b = blogData[idx];
+  function closeBlogEditModal() {
+    document.getElementById('blogEditModal').classList.remove('show');
+    editingBlogIdx = null;
+  }
+
+  async function saveBlogEdit() {
+    if (editingBlogIdx === null) return;
+    const b = blogData[editingBlogIdx];
     if (!b) return;
+
+    const url = document.getElementById('editBlogUrl').value.trim();
+    const nickname = document.getElementById('editBlogNickname').value.trim();
+
+    if (!url) { showToast('URL을 입력해주세요'); return; }
 
     try {
       if (isOnline() && b.row) {
         const result = await apiCall({
           action: 'updateBlog',
           row: b.row.toString(),
+          url,
           nickname
         });
         if (!result.success) throw new Error(result.error);
       }
-      blogData[idx].nickname = nickname;
+      blogData[editingBlogIdx].url = url;
+      blogData[editingBlogIdx].nickname = nickname;
+      closeBlogEditModal();
       renderBlogList();
-      showToast('닉네임이 수정되었습니다');
+      showToast('수정되었습니다');
     } catch (err) {
       showToast('수정 실패: ' + err.message);
+    }
+  }
+
+  async function deleteBlogEntry(idx) {
+    const b = blogData[idx];
+    if (!b) return;
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      if (isOnline() && b.row) {
+        const result = await apiCall({
+          action: 'deleteBlog',
+          row: b.row.toString()
+        });
+        if (!result.success) throw new Error(result.error);
+      }
+      blogData.splice(idx, 1);
+      // 삭제 후 row 번호 재정렬
+      blogData.forEach((item, i) => { if (item.row) item.row = i + 2; });
+      renderBlogList();
+      showToast('삭제되었습니다');
+    } catch (err) {
+      showToast('삭제 실패: ' + err.message);
     }
   }
 
