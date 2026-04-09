@@ -1158,6 +1158,7 @@
     <button class="tab" data-tab="calendar">캘린더</button>
     <button class="tab" data-tab="tips">꿀팁</button>
     <button class="tab" data-tab="buddy">짝꿍코드</button>
+    <button class="tab" data-tab="blog">블로그</button>
   </div>
 
   <!-- Register Tab -->
@@ -1276,6 +1277,26 @@
     <input type="text" class="tips-search" id="buddySearch" placeholder="업체명, 코드, 혜택으로 검색..." oninput="renderBuddyList()">
     <div class="tips-chips" id="buddyChips"></div>
     <div class="accordion-group" id="buddyAccordion"></div>
+  </div>
+
+  <!-- Blog Tab -->
+  <div class="section-panel" id="panel-blog">
+    <div class="buddy-form">
+      <h2>블로그 링크 등록</h2>
+      <div class="buddy-grid">
+        <div class="form-group full">
+          <label>블로그 URL *</label>
+          <input type="url" id="blogUrl" placeholder="https://blog.naver.com/...">
+        </div>
+        <div class="form-group">
+          <label>톡방 닉네임 (선택)</label>
+          <input type="text" id="blogNickname" placeholder="예: 햅피">
+        </div>
+        <button class="btn-submit" id="btnBlogSubmit" onclick="addBlogLink()">등록하기</button>
+      </div>
+    </div>
+    <input type="text" class="tips-search" id="blogSearch" placeholder="URL, 닉네임으로 검색..." oninput="renderBlogList()">
+    <div id="blogList" class="entry-list" style="margin-top:var(--spacing-xl);"></div>
   </div>
 
   <!-- List Tab -->
@@ -1486,6 +1507,7 @@
       if (tab.dataset.tab === 'list') renderList();
       if (tab.dataset.tab === 'tips' && !tipsLoaded) loadTips();
       if (tab.dataset.tab === 'buddy' && !buddyLoaded) loadBuddyCodes();
+      if (tab.dataset.tab === 'blog' && !blogLoaded) loadBlogLinks();
     });
   });
 
@@ -2475,6 +2497,161 @@
 
     btn.disabled = false;
     btn.textContent = '등록하기';
+  }
+
+  // ===== Blog Tab =====
+  const BLOG_SHEET_ID = '1JuxYbX9SbzVr1hTfeRWyAQpgGLIK1u8Ad-HrGBIQ2Ww';
+  const BLOG_SHEET_NAME = '블로그';
+  let blogData = [];
+  let blogLoaded = false;
+  const BLOG_STORAGE_KEY = 'wedding_blog_links';
+
+  async function loadBlogLinks() {
+    const listEl = document.getElementById('blogList');
+    listEl.innerHTML = '<div class="tips-loading">블로그 링크를 불러오는 중...</div>';
+
+    try {
+      const rows = await loadSheetJSONP(BLOG_SHEET_ID, BLOG_SHEET_NAME);
+      blogData = rows.filter(r => r[0]).map((r, i) => ({
+        row: i + 2, // 시트 행 번호 (1행=헤더, 2행부터 데이터)
+        url: r[0] || '',
+        nickname: r[1] || '',
+      }));
+      blogLoaded = true;
+      const local = JSON.parse(localStorage.getItem(BLOG_STORAGE_KEY) || '[]');
+      local.forEach(l => {
+        if (!blogData.some(b => b.url === l.url)) {
+          blogData.push({ ...l, pending: true });
+        }
+      });
+      renderBlogList();
+    } catch (err) {
+      console.error('Blog load error:', err);
+      blogData = JSON.parse(localStorage.getItem(BLOG_STORAGE_KEY) || '[]');
+      if (blogData.length) {
+        renderBlogList();
+      } else {
+        listEl.innerHTML = '<div class="tips-empty">블로그 링크를 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
+      }
+    }
+  }
+
+  function renderBlogList() {
+    const query = document.getElementById('blogSearch').value.trim().toLowerCase();
+    let filtered = blogData;
+
+    if (query) {
+      filtered = filtered.filter(b =>
+        b.url.toLowerCase().includes(query) ||
+        b.nickname.toLowerCase().includes(query)
+      );
+    }
+
+    const listEl = document.getElementById('blogList');
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">&#128221;</div><p>${query ? '검색 결과가 없습니다' : '등록된 블로그가 없습니다'}</p></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map((b, idx) => {
+      const displayUrl = b.url.replace(/^https?:\/\/(m\.)?/, '').replace(/\/$/, '');
+      const dataIdx = blogData.indexOf(b);
+      return `<div class="entry-card">
+        <div class="entry-date-badge" style="background:linear-gradient(135deg,var(--brand-100),var(--brand-200));min-width:48px;">
+          <span class="day" style="font-size:1.25rem;">&#128279;</span>
+        </div>
+        <div class="entry-info" style="min-width:0;flex:1;">
+          ${b.nickname ? `<div class="entry-name">${esc(b.nickname)}</div>` : '<div class="entry-memo" style="font-size:0.75rem;">닉네임 미등록</div>'}
+          <div class="entry-detail" style="word-break:break-all;">
+            <a href="${esc(b.url)}" target="_blank" rel="noopener" style="color:var(--brand-600);text-decoration:none;">${esc(displayUrl)}</a>
+          </div>
+          ${b.pending ? '<div class="entry-memo" style="color:var(--warning-600);font-size:0.75rem;">시트 반영 대기중</div>' : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="btn-icon" onclick="editBlogNickname(${dataIdx})" title="닉네임 수정">&#9998;</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function addBlogLink() {
+    const url = document.getElementById('blogUrl').value.trim();
+    const nickname = document.getElementById('blogNickname').value.trim();
+
+    if (!url) { showToast('블로그 URL을 입력해주세요'); return; }
+    if (!/^https?:\/\/.+/.test(url)) { showToast('올바른 URL을 입력해주세요'); return; }
+
+    if (blogData.some(b => b.url === url)) {
+      showToast('이미 등록된 URL입니다');
+      return;
+    }
+
+    const btn = document.getElementById('btnBlogSubmit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    const entry = { url, nickname };
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({
+          action: 'addBlog',
+          url, nickname
+        });
+        if (result.success) {
+          blogData.push(entry);
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } else {
+        throw new Error('offline');
+      }
+    } catch (err) {
+      entry.pending = true;
+      blogData.push(entry);
+      const local = JSON.parse(localStorage.getItem(BLOG_STORAGE_KEY) || '[]');
+      local.push(entry);
+      localStorage.setItem(BLOG_STORAGE_KEY, JSON.stringify(local));
+    }
+
+    document.getElementById('blogUrl').value = '';
+    document.getElementById('blogNickname').value = '';
+
+    showToast('블로그 링크가 등록되었습니다!');
+    renderBlogList();
+
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+  }
+
+  function editBlogNickname(idx) {
+    const b = blogData[idx];
+    if (!b) return;
+    const nickname = prompt('톡방 닉네임을 입력하세요:', b.nickname || '');
+    if (nickname === null) return; // 취소
+    updateBlogNickname(idx, nickname.trim());
+  }
+
+  async function updateBlogNickname(idx, nickname) {
+    const b = blogData[idx];
+    if (!b) return;
+
+    try {
+      if (isOnline() && b.row) {
+        const result = await apiCall({
+          action: 'updateBlog',
+          row: b.row.toString(),
+          nickname
+        });
+        if (!result.success) throw new Error(result.error);
+      }
+      blogData[idx].nickname = nickname;
+      renderBlogList();
+      showToast('닉네임이 수정되었습니다');
+    } catch (err) {
+      showToast('수정 실패: ' + err.message);
+    }
   }
 
   // ===== Init =====
