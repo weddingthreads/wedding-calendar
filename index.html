@@ -2086,7 +2086,7 @@
 
     try {
       const rows = await loadSheetJSONP(TIPS_SHEET_ID, TIPS_SHEET_NAME);
-      const validCategories = ['웨딩홀','스드메','드레스','메이크업','촬영/영상','반지/예물','부케/꽃','구두/속옷','사회/축가','다이어트/관리','비용/견적','청첩장/답례품','허니문','기타'];
+      const validCategories = ['웨딩홀','스드메','드레스','메이크업','촬영/영상','사설보정','반지/예물','부케/꽃','구두/속옷','사회/축가','다이어트/관리','비용/견적','청첩장/답례품','허니문','기타'];
       tipsData = rows
         .filter(r => r[0] && validCategories.includes(r[0]))
         .map(r => ({
