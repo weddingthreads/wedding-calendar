@@ -191,6 +191,32 @@
     box-shadow: var(--shadow-sm);
   }
 
+  /* Sub Tabs */
+  .sub-tabs {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-xl);
+    border-bottom: 1px solid var(--border-primary);
+  }
+  .sub-tab {
+    flex: 1;
+    padding: var(--spacing-md);
+    background: transparent;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-quaternary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .sub-tab.active {
+    color: var(--brand-600);
+    border-bottom-color: var(--brand-600);
+  }
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+
   /* Form */
   .form-card {
     background: var(--bg-primary);
@@ -1158,7 +1184,7 @@
     <button class="tab" data-tab="calendar">캘린더</button>
     <button class="tab" data-tab="tips">꿀팁</button>
     <button class="tab" data-tab="buddy">짝꿍코드</button>
-    <button class="tab" data-tab="blog">블로그</button>
+    <button class="tab" data-tab="sns">SNS</button>
   </div>
 
   <!-- Register Tab -->
@@ -1279,24 +1305,52 @@
     <div class="accordion-group" id="buddyAccordion"></div>
   </div>
 
-  <!-- Blog Tab -->
-  <div class="section-panel" id="panel-blog">
-    <div class="buddy-form">
-      <h2>블로그 링크 등록</h2>
-      <div class="buddy-grid">
-        <div class="form-group full">
-          <label>블로그 URL *</label>
-          <input type="url" id="blogUrl" placeholder="https://blog.naver.com/...">
-        </div>
-        <div class="form-group">
-          <label>톡방 닉네임 (선택)</label>
-          <input type="text" id="blogNickname" placeholder="예: 햅피">
-        </div>
-        <button class="btn-submit" id="btnBlogSubmit" onclick="addBlogLink()">등록하기</button>
-      </div>
+  <!-- SNS Tab -->
+  <div class="section-panel" id="panel-sns">
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="blog">블로그</button>
+      <button class="sub-tab" data-subtab="insta">인스타</button>
     </div>
-    <input type="text" class="tips-search" id="blogSearch" placeholder="URL, 닉네임으로 검색..." oninput="renderBlogList()">
-    <div id="blogList" class="entry-list" style="margin-top:var(--spacing-xl);"></div>
+
+    <!-- 블로그 서브패널 -->
+    <div class="sub-panel active" id="subpanel-blog">
+      <div class="buddy-form">
+        <h2>블로그 링크 등록</h2>
+        <div class="buddy-grid">
+          <div class="form-group full">
+            <label>블로그 URL *</label>
+            <input type="url" id="blogUrl" placeholder="https://blog.naver.com/...">
+          </div>
+          <div class="form-group">
+            <label>톡방 닉네임 (선택)</label>
+            <input type="text" id="blogNickname" placeholder="예: 햅피">
+          </div>
+          <button class="btn-submit" id="btnBlogSubmit" onclick="addBlogLink()">등록하기</button>
+        </div>
+      </div>
+      <input type="text" class="tips-search" id="blogSearch" placeholder="URL, 닉네임으로 검색..." oninput="renderBlogList()">
+      <div id="blogList" class="entry-list" style="margin-top:var(--spacing-xl);"></div>
+    </div>
+
+    <!-- 인스타 서브패널 -->
+    <div class="sub-panel" id="subpanel-insta">
+      <div class="buddy-form">
+        <h2>인스타 아이디 등록</h2>
+        <div class="buddy-grid">
+          <div class="form-group full">
+            <label>인스타 아이디 *</label>
+            <input type="text" id="instaId" placeholder="예: happy_wedding 또는 @happy_wedding">
+          </div>
+          <div class="form-group">
+            <label>톡방 닉네임 (선택)</label>
+            <input type="text" id="instaNickname" placeholder="예: 햅피">
+          </div>
+          <button class="btn-submit" id="btnInstaSubmit" onclick="addInstagramLink()">등록하기</button>
+        </div>
+      </div>
+      <input type="text" class="tips-search" id="instaSearch" placeholder="아이디, 닉네임으로 검색..." oninput="renderInstagramList()">
+      <div id="instaList" class="entry-list" style="margin-top:var(--spacing-xl);"></div>
+    </div>
   </div>
 
   <!-- List Tab -->
@@ -1398,6 +1452,25 @@
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeBlogEditModal()">취소</button>
       <button class="btn-save" onclick="saveBlogEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Instagram Edit Modal -->
+<div class="modal-overlay" id="instaEditModal" onclick="if(event.target===this)closeInstagramEditModal()">
+  <div class="modal-content">
+    <h3>인스타 수정</h3>
+    <div class="form-group">
+      <label>인스타 아이디</label>
+      <input type="text" id="editInstaId" placeholder="입력하기">
+    </div>
+    <div class="form-group">
+      <label>톡방 닉네임 (선택)</label>
+      <input type="text" id="editInstaNickname" placeholder="입력하기">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeInstagramEditModal()">취소</button>
+      <button class="btn-save" onclick="saveInstagramEdit()">저장</button>
     </div>
   </div>
 </div>
@@ -1526,7 +1599,24 @@
       if (tab.dataset.tab === 'list') renderList();
       if (tab.dataset.tab === 'tips' && !tipsLoaded) loadTips();
       if (tab.dataset.tab === 'buddy' && !buddyLoaded) loadBuddyCodes();
-      if (tab.dataset.tab === 'blog' && !blogLoaded) loadBlogLinks();
+      if (tab.dataset.tab === 'sns') {
+        const activeSub = document.querySelector('#panel-sns .sub-tab.active');
+        const which = activeSub ? activeSub.dataset.subtab : 'blog';
+        if (which === 'blog' && !blogLoaded) loadBlogLinks();
+        if (which === 'insta' && !instaLoaded) loadInstagramLinks();
+      }
+    });
+  });
+
+  // ===== Sub Tabs (SNS) =====
+  document.querySelectorAll('#panel-sns .sub-tab').forEach(sub => {
+    sub.addEventListener('click', () => {
+      document.querySelectorAll('#panel-sns .sub-tab').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('#panel-sns .sub-panel').forEach(p => p.classList.remove('active'));
+      sub.classList.add('active');
+      document.getElementById('subpanel-' + sub.dataset.subtab).classList.add('active');
+      if (sub.dataset.subtab === 'blog' && !blogLoaded) loadBlogLinks();
+      if (sub.dataset.subtab === 'insta' && !instaLoaded) loadInstagramLinks();
     });
   });
 
@@ -2710,6 +2800,213 @@
       // 삭제 후 row 번호 재정렬
       blogData.forEach((item, i) => { if (item.row) item.row = i + 2; });
       renderBlogList();
+      showToast('삭제되었습니다');
+    } catch (err) {
+      showToast('삭제 실패: ' + err.message);
+    }
+  }
+
+  // ===== Instagram Tab =====
+  const INSTA_SHEET_NAME = '인스타';
+  const INSTA_STORAGE_KEY = 'wedding_instagram_links';
+  const INSTA_ID_PATTERN = /^[a-zA-Z0-9._]+$/;
+  let instaData = [];
+  let instaLoaded = false;
+  let editingInstaIdx = null;
+
+  function normalizeInstagramId(input) {
+    let s = (input || '').trim();
+    if (!s) return '';
+    const m = s.match(/^https?:\/\/(?:www\.)?instagram\.com\/([^/?#]+)/i);
+    if (m) s = m[1];
+    s = s.replace(/^@/, '');
+    return s.replace(/\/+$/, '');
+  }
+
+  async function loadInstagramLinks() {
+    const listEl = document.getElementById('instaList');
+    listEl.innerHTML = '<div class="tips-loading">인스타 아이디를 불러오는 중...</div>';
+
+    try {
+      const rows = await loadSheetJSONP(BLOG_SHEET_ID, INSTA_SHEET_NAME);
+      instaData = rows
+        .filter(r => r[0] && r[0] !== 'id' && r[0] !== 'ID')
+        .map((r, i) => ({
+          row: i + 2,
+          id: (r[0] || '').toString().trim(),
+          nickname: r[1] || '',
+        }));
+      instaLoaded = true;
+      const local = JSON.parse(localStorage.getItem(INSTA_STORAGE_KEY) || '[]');
+      local.forEach(l => {
+        if (!instaData.some(x => x.id === l.id)) {
+          instaData.push({ ...l, pending: true });
+        }
+      });
+      renderInstagramList();
+    } catch (err) {
+      console.error('Instagram load error:', err);
+      instaData = JSON.parse(localStorage.getItem(INSTA_STORAGE_KEY) || '[]');
+      if (instaData.length) {
+        renderInstagramList();
+      } else {
+        listEl.innerHTML = '<div class="tips-empty">인스타 아이디를 불러올 수 없습니다.<br>시트 공유 설정을 확인해주세요.</div>';
+      }
+    }
+  }
+
+  function renderInstagramList() {
+    const query = document.getElementById('instaSearch').value.trim().toLowerCase();
+    let filtered = instaData;
+
+    if (query) {
+      filtered = filtered.filter(x =>
+        x.id.toLowerCase().includes(query) ||
+        (x.nickname || '').toLowerCase().includes(query)
+      );
+    }
+
+    const listEl = document.getElementById('instaList');
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">&#128247;</div><p>${query ? '검색 결과가 없습니다' : '등록된 인스타가 없습니다'}</p></div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(x => {
+      const dataIdx = instaData.indexOf(x);
+      const href = 'https://www.instagram.com/' + encodeURIComponent(x.id);
+      return `<div class="entry-card">
+        <div class="entry-date-badge" style="background:linear-gradient(135deg,var(--brand-100),var(--brand-200));min-width:48px;">
+          <span class="day" style="font-size:1.25rem;">&#128247;</span>
+        </div>
+        <div class="entry-info" style="min-width:0;flex:1;">
+          ${x.nickname ? `<div class="entry-name">${esc(x.nickname)}</div>` : '<div class="entry-memo" style="font-size:0.75rem;">닉네임 미등록</div>'}
+          <div class="entry-detail" style="word-break:break-all;">
+            <a href="${esc(href)}" target="_blank" rel="noopener" style="color:var(--brand-600);text-decoration:none;">@${esc(x.id)}</a>
+          </div>
+          ${x.pending ? '<div class="entry-memo" style="color:var(--warning-600);font-size:0.75rem;">시트 반영 대기중</div>' : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="btn-icon" onclick="editInstagramEntry(${dataIdx})" title="수정">&#9998;</button>
+          <button class="btn-icon delete" onclick="deleteInstagramEntry(${dataIdx})" title="삭제">&#10005;</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function addInstagramLink() {
+    const rawId = document.getElementById('instaId').value;
+    const nickname = document.getElementById('instaNickname').value.trim();
+    const id = normalizeInstagramId(rawId);
+
+    if (!id) { showToast('인스타 아이디를 입력해주세요'); return; }
+    if (!INSTA_ID_PATTERN.test(id)) { showToast('올바른 인스타 아이디를 입력해주세요'); return; }
+
+    if (instaData.some(x => x.id === id)) {
+      showToast('이미 등록된 아이디입니다');
+      return;
+    }
+
+    const btn = document.getElementById('btnInstaSubmit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+
+    const entry = { id, nickname };
+
+    try {
+      if (isOnline()) {
+        const result = await apiCall({
+          action: 'addInstagram',
+          id, nickname
+        });
+        if (result.success) {
+          instaData.push(entry);
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } else {
+        throw new Error('offline');
+      }
+    } catch (err) {
+      entry.pending = true;
+      instaData.push(entry);
+      const local = JSON.parse(localStorage.getItem(INSTA_STORAGE_KEY) || '[]');
+      local.push(entry);
+      localStorage.setItem(INSTA_STORAGE_KEY, JSON.stringify(local));
+    }
+
+    document.getElementById('instaId').value = '';
+    document.getElementById('instaNickname').value = '';
+
+    showToast('인스타 아이디가 등록되었습니다!');
+    renderInstagramList();
+
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+  }
+
+  function editInstagramEntry(idx) {
+    const x = instaData[idx];
+    if (!x) return;
+    editingInstaIdx = idx;
+    document.getElementById('editInstaId').value = x.id || '';
+    document.getElementById('editInstaNickname').value = x.nickname || '';
+    document.getElementById('instaEditModal').classList.add('show');
+  }
+
+  function closeInstagramEditModal() {
+    document.getElementById('instaEditModal').classList.remove('show');
+    editingInstaIdx = null;
+  }
+
+  async function saveInstagramEdit() {
+    if (editingInstaIdx === null) return;
+    const x = instaData[editingInstaIdx];
+    if (!x) return;
+
+    const id = normalizeInstagramId(document.getElementById('editInstaId').value);
+    const nickname = document.getElementById('editInstaNickname').value.trim();
+
+    if (!id) { showToast('아이디를 입력해주세요'); return; }
+    if (!INSTA_ID_PATTERN.test(id)) { showToast('올바른 인스타 아이디를 입력해주세요'); return; }
+
+    try {
+      if (isOnline() && x.row) {
+        const result = await apiCall({
+          action: 'updateInstagram',
+          row: x.row.toString(),
+          id,
+          nickname
+        });
+        if (!result.success) throw new Error(result.error);
+      }
+      instaData[editingInstaIdx].id = id;
+      instaData[editingInstaIdx].nickname = nickname;
+      closeInstagramEditModal();
+      renderInstagramList();
+      showToast('수정되었습니다');
+    } catch (err) {
+      showToast('수정 실패: ' + err.message);
+    }
+  }
+
+  async function deleteInstagramEntry(idx) {
+    const x = instaData[idx];
+    if (!x) return;
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+
+    try {
+      if (isOnline() && x.row) {
+        const result = await apiCall({
+          action: 'deleteInstagram',
+          row: x.row.toString()
+        });
+        if (!result.success) throw new Error(result.error);
+      }
+      instaData.splice(idx, 1);
+      instaData.forEach((item, i) => { if (item.row) item.row = i + 2; });
+      renderInstagramList();
       showToast('삭제되었습니다');
     } catch (err) {
       showToast('삭제 실패: ' + err.message);
