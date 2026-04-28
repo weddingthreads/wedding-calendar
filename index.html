@@ -625,7 +625,7 @@
   .entry-info { flex: 1; min-width: 0; }
   .entry-name {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--ink);
     letter-spacing: -0.01em;
   }
@@ -1437,19 +1437,15 @@
         </div>
         <div class="form-group">
           <label>결혼일</label>
-          <input type="date" id="inputDate">
+          <input type="date" id="inputDate" max="9999-12-31" min="1900-01-01">
         </div>
         <div class="form-group">
           <label>결혼식 시간 (선택)</label>
-          <input type="time" id="inputTime" step="3600">
+          <input type="time" id="inputTime" step="300">
         </div>
         <div class="form-group">
           <label>배우자 이름 (선택)</label>
           <input type="text" id="inputSpouse" placeholder="예: 김영희">
-        </div>
-        <div class="form-group">
-          <label>연락처 (선택)</label>
-          <input type="text" id="inputContact" placeholder="010-1234-5678">
         </div>
         <div class="form-group full">
           <label>장소 (선택)</label>
@@ -1631,10 +1627,9 @@
   <div class="modal-content">
     <h3>수정하기</h3>
     <div class="form-group"><label>이름</label><input type="text" id="editName"></div>
-    <div class="form-group"><label>결혼일</label><input type="date" id="editDate"></div>
-    <div class="form-group"><label>결혼식 시간</label><input type="time" id="editTime" step="3600"></div>
+    <div class="form-group"><label>결혼일</label><input type="date" id="editDate" max="9999-12-31" min="1900-01-01"></div>
+    <div class="form-group"><label>결혼식 시간</label><input type="time" id="editTime" step="300"></div>
     <div class="form-group"><label>배우자 이름</label><input type="text" id="editSpouse"></div>
-    <div class="form-group"><label>연락처</label><input type="text" id="editContact"></div>
     <div class="form-group"><label>장소</label><input type="text" id="editMemo"></div>
     <div class="form-group">
       <label>품앗이 참여</label>
@@ -1704,6 +1699,23 @@
 <!-- SVG icon definitions (reused via <use>) -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
+    <linearGradient id="g-instagram" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FEDA75"/>
+      <stop offset="25%" stop-color="#FA7E1E"/>
+      <stop offset="50%" stop-color="#D62976"/>
+      <stop offset="75%" stop-color="#962FBF"/>
+      <stop offset="100%" stop-color="#4F5BD5"/>
+    </linearGradient>
+    <symbol id="i-instagram" viewBox="0 0 32 32">
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#g-instagram)"/>
+      <rect x="6.5" y="6.5" width="19" height="19" rx="5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="16" cy="16" r="5" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="22.5" cy="9.5" r="1.6" fill="#FFFFFF"/>
+    </symbol>
+    <symbol id="i-naver-blog" viewBox="0 0 40 24">
+      <rect x="0" y="0" width="40" height="24" rx="6" fill="#03C75A"/>
+      <text x="20" y="17.5" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" letter-spacing="-0.6">blog</text>
+    </symbol>
     <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
     </symbol>
@@ -1790,7 +1802,7 @@
         const payload = {
           action: 'update', id: e.id,
           name: e.name || '', date: e.date || '', time: e.time || '',
-          spouse: e.spouse || '', contact: e.contact || '', memo: e.memo || '',
+          spouse: e.spouse || '', memo: e.memo || '',
           wantsHelp: 'true'
         };
         const result = await apiCall(payload);
@@ -1903,7 +1915,6 @@
     const date = document.getElementById('inputDate').value;
     const time = document.getElementById('inputTime').value;
     const spouse = document.getElementById('inputSpouse').value.trim();
-    const contact = document.getElementById('inputContact').value.trim();
     const memo = document.getElementById('inputMemo').value.trim();
     const wantsHelp = registerWantsHelp;
 
@@ -1916,7 +1927,7 @@
 
     try {
       if (isOnline()) {
-        const result = await apiCall({ action: 'add', name, date, time, spouse, contact, memo, wantsHelp: wantsHelp.toString() });
+        const result = await apiCall({ action: 'add', name, date, time, spouse, memo, wantsHelp: wantsHelp.toString() });
         if (result.success) {
           const entry = result.entry;
           if (entry.wantsHelp === undefined) entry.wantsHelp = wantsHelp;
@@ -1926,13 +1937,13 @@
       } else {
         const entry = {
           id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          name, date, time, spouse, contact, memo, wantsHelp,
+          name, date, time, spouse, memo, wantsHelp,
           createdAt: new Date().toISOString()
         };
         entries.push(entry);
         saveLocal(entries);
       }
-      ['inputName','inputDate','inputTime','inputSpouse','inputContact','inputMemo'].forEach(id => document.getElementById(id).value = '');
+      ['inputName','inputDate','inputTime','inputSpouse','inputMemo'].forEach(id => document.getElementById(id).value = '');
       setWantsHelp(true);
       showToast(`${name}님의 결혼일이 등록되었습니다`);
       refreshAll();
@@ -1996,10 +2007,7 @@
     const wantsHelp = entryWantsHelp(e);
     const annivLabel = years > 0 ? `<span class="anniv">${years}주년</span>` : '';
 
-    const details = [];
-    details.push(formatDate(e.date) + (time ? ' · ' + time : ''));
-    if (e.spouse) details.push('♡ ' + esc(e.spouse));
-    if (e.memo) details.push(esc(e.memo));
+    const dateLine = formatDate(e.date) + (time ? ' ' + time : '');
 
     const attendBtn = wantsHelp ? `
       <button class="btn-attend" onclick="openAttendModal('${e.id}')">
@@ -2016,11 +2024,12 @@
         </div>
         <div class="entry-info">
           <div class="entry-name">
-            ${esc(e.name)}${e.spouse ? ' <span style="color:var(--ink-4);font-weight:400;">·</span> ' + esc(e.spouse) : ''}
+            ${esc(e.name)}${e.spouse ? ' <span style="color:var(--rose);font-weight:400;">♡</span> ' + esc(e.spouse) : ''}
             ${annivLabel}
             ${tag}
           </div>
-          <div class="entry-detail">${details.join(' <span style="color:var(--ink-4)">·</span> ')}</div>
+          <div class="entry-detail">${dateLine}</div>
+          ${e.memo ? `<div class="entry-detail">${esc(e.memo)}</div>` : ''}
           ${attendees.length ? `<div class="attendees-list">${attendees.map(a => `<span class="attendee-chip">${esc(a)}</span>`).join('')}</div>` : ''}
         </div>
         <div class="entry-actions">
@@ -2160,7 +2169,6 @@
     document.getElementById('editDate').value = formatDateInput(e.date);
     document.getElementById('editTime').value = parseTime(e.time);
     document.getElementById('editSpouse').value = e.spouse || '';
-    document.getElementById('editContact').value = e.contact || '';
     document.getElementById('editMemo').value = e.memo || '';
     setEditWantsHelp(entryWantsHelp(e));
     document.getElementById('editModal').classList.add('show');
@@ -2176,7 +2184,6 @@
       date: document.getElementById('editDate').value,
       time: document.getElementById('editTime').value,
       spouse: document.getElementById('editSpouse').value.trim(),
-      contact: document.getElementById('editContact').value.trim(),
       memo: document.getElementById('editMemo').value.trim(),
       wantsHelp: editWantsHelp
     };
@@ -2614,11 +2621,11 @@
       const displayUrl = b.url.replace(/^https?:\/\/(m\.)?/, '').replace(/\/$/, '');
       const dataIdx = blogData.indexOf(b);
       return `<div class="entry-card">
-        <div class="entry-date-badge" style="background:var(--rose-50);border-color:var(--rose-100);color:var(--rose);font-size:22px;line-height:1;">
-          <span style="display:inline-block;">🔗</span>
+        <div class="entry-date-badge" style="background:transparent;border-color:transparent;padding:0;">
+          <svg viewBox="0 0 40 24" width="44" height="26" aria-label="네이버 블로그"><use href="#i-naver-blog"/></svg>
         </div>
         <div class="entry-info" style="min-width:0;">
-          ${b.nickname ? `<div class="entry-name">${esc(b.nickname)}</div>` : '<div class="entry-memo">닉네임 미등록</div>'}
+          <div class="entry-memo">${b.nickname ? esc(b.nickname) : '닉네임 미등록'}</div>
           <div class="entry-detail" style="word-break:break-all;">
             <a href="${esc(b.url)}" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;">${esc(displayUrl)}</a>
           </div>
@@ -2751,11 +2758,11 @@
       const dataIdx = instaData.indexOf(x);
       const href = 'https://www.instagram.com/' + encodeURIComponent(x.id);
       return `<div class="entry-card">
-        <div class="entry-date-badge" style="background:var(--rose-50);border-color:var(--rose-100);color:var(--rose);font-size:22px;line-height:1;">
-          <span style="display:inline-block;">📷</span>
+        <div class="entry-date-badge" style="background:transparent;border-color:transparent;padding:0;">
+          <svg viewBox="0 0 32 32" width="36" height="36" aria-label="Instagram"><use href="#i-instagram"/></svg>
         </div>
         <div class="entry-info" style="min-width:0;">
-          ${x.nickname ? `<div class="entry-name">${esc(x.nickname)}</div>` : '<div class="entry-memo">닉네임 미등록</div>'}
+          <div class="entry-memo">${x.nickname ? esc(x.nickname) : '닉네임 미등록'}</div>
           <div class="entry-detail" style="word-break:break-all;">
             <a href="${esc(href)}" target="_blank" rel="noopener" style="color:var(--rose);text-decoration:none;">@${esc(x.id)}</a>
           </div>
@@ -2840,6 +2847,46 @@
       showToast('삭제되었습니다');
     } catch (err) { showToast('삭제 실패: ' + err.message); }
   }
+
+  // ===== Year clamp (날짜 input의 연도가 4자리를 넘기면 자동으로 4자리로 보정) =====
+  function clampDateYear(input) {
+    const v = input.value;
+    if (!v) return;
+    const m = v.match(/^(-?)(\d+)-(\d{1,2})-(\d{1,2})$/);
+    if (m && m[2].length > 4) {
+      const yr = m[2].slice(-4);
+      input.value = `${m[1]}${yr}-${m[3].padStart(2, '0')}-${m[4].padStart(2, '0')}`;
+    }
+  }
+  ['inputDate', 'editDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => clampDateYear(el));
+    el.addEventListener('change', () => clampDateYear(el));
+    el.addEventListener('blur', () => clampDateYear(el));
+  });
+
+  // ===== 5분 단위 시간 보정 (Chrome time input은 step만으론 직접 타이핑까지 막지 못함) =====
+  function snapTo5Min(input) {
+    const v = input.value;
+    if (!v) return;
+    const m = v.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return;
+    let h = parseInt(m[1], 10);
+    let min = parseInt(m[2], 10);
+    if (isNaN(h) || isNaN(min)) return;
+    const remainder = min % 5;
+    if (remainder === 0) return;
+    min = Math.round(min / 5) * 5;
+    if (min === 60) { min = 0; h = (h + 1) % 24; }
+    input.value = String(h).padStart(2, '0') + ':' + String(min).padStart(2, '0');
+  }
+  ['inputTime', 'editTime'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => snapTo5Min(el));
+    el.addEventListener('blur', () => snapTo5Min(el));
+  });
 
   // ===== Init =====
   if (!isOnline()) document.getElementById('setupBanner').style.display = 'block';
